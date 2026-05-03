@@ -17,7 +17,7 @@
     <header class="mb-8 flex justify-between items-end">
         <div>
             <h1 class="text-3xl font-bold text-slate-800">澳洲旅遊業務總覽</h1>
-            <p class="text-slate-500 mt-2" id="statusText">系統已載入，準備就緒</p>
+            <p class="text-slate-500 mt-2 font-bold" id="statusText">正在檢查系統狀態...</p>
         </div>
     </header>
 
@@ -59,7 +59,6 @@
                 <label class="block text-sm font-medium text-slate-700">匯率</label>
                 <input type="number" step="0.01" id="fxRate" value="23" class="mt-1 block w-full p-2 border border-slate-300 rounded-md" required>
             </div>
-            <!-- 備註欄位加高為 rows="2" -->
             <div class="md:col-span-3">
                 <label class="block text-sm font-medium text-slate-700">行程詳情 / 備註</label>
                 <textarea id="note" rows="2" class="mt-1 block w-full p-2 border border-slate-300 rounded-md"></textarea>
@@ -113,10 +112,9 @@
     </div>
 
 <script type="module">
-    import { db } from './firebase-config.js';
-    import { collection, addDoc, onSnapshot, query, orderBy } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
-
-    // --- 功能 1：強化版智慧文字解析 ---
+    // ==========================================
+    // 第一部分：UI 與文字解析邏輯 (完全不依賴資料庫，絕對會執行)
+    // ==========================================
     document.getElementById('parseBtn').addEventListener('click', () => {
         const rawText = document.getElementById('rawOrderText').value;
         if(!rawText) return alert("請先貼上文字");
@@ -128,34 +126,27 @@
         let pax = 1;
         let note = '';
         
-        // 判斷模式
         const upperText = rawText.toUpperCase();
         if (upperText.includes("FLIGGY") || upperText.includes("LITTLE FOX") || upperText.includes("來自")) mode = 'Mode_B'; 
         if (rawText.includes("第三方平台") || rawText.includes("更改者資料")) mode = 'Mode_C'; 
 
-        // 1. 抓取姓名或單號
         const nameMatch = rawText.match(/姓名[：:]\s*([^\n]+)/);
         const orderMatch = rawText.match(/訂單詳情\s*-\s*([A-Z0-9]+)/);
         
         if (nameMatch) customer = nameMatch[1].trim();
         else if (orderMatch) customer = orderMatch[1].trim();
         else if (rawText.includes("CHUANG MIN CHI")) customer = "莊閔淇 CHUANG MIN CHI"; 
+        else if (rawText.includes("LIAO HSIAO CHING")) customer = "廖筱菁 LIAO HSIAO CHING";
         
-        // 2. 抓取行程與訂單詳情 (將兩者合併放入備註)
         let notesArr = [];
         const detailLineMatch = rawText.match(/訂單詳情[^\n]+/);
-        if (detailLineMatch) notesArr.push(detailLineMatch[0].trim()); // 抓入「訂單詳情 - DS... (來自...)」
-
+        if (detailLineMatch) notesArr.push(detailLineMatch[0].trim()); 
         const tripMatch = rawText.match(/行程-([^\n]+)/);
-        if (tripMatch) notesArr.push(tripMatch[0].trim()); // 抓入「行程-反向大洋路...」
+        if (tripMatch) notesArr.push(tripMatch[0].trim()); 
 
-        if (notesArr.length > 0) {
-            note = notesArr.join(" | "); // 使用分隔符號串接
-        } else {
-            note = "自動解析匯入";
-        }
+        if (notesArr.length > 0) note = notesArr.join(" | "); 
+        else note = "自動解析匯入";
 
-        // 3. 抓取人數
         const paxMatch1 = rawText.match(/×\s*(\d+)/); 
         const paxMatch2 = rawText.match(/(\d+)\s*位/);
         const paxMatch3 = rawText.match(/人數[：:]\s*(\d+)/);
@@ -165,7 +156,6 @@
         else if (paxMatch3) pax = paxMatch3[1];
         else if (rawText.includes("5大4小")) pax = 9;
 
-        // 4. 抓取金額
         const totalMatch = rawText.match(/(?:費用|共計|總計)[^\d]*([0-9.]+)/);
         if (totalMatch) {
             aud = totalMatch[1];
@@ -176,13 +166,11 @@
             else if (genericAudMatch) aud = genericAudMatch[1];
         }
 
-        // 5. 抓特殊資訊
         const weightMatch = rawText.match(/(\d{2,3}kg)/i);
         if (weightMatch) special += weightMatch[1] + " ";
         const dateMatch = rawText.match(/出發時間-([0-9-]+)/);
         if (dateMatch) special += "出發:" + dateMatch[1];
 
-        // 自動填入表單
         document.getElementById('mode').value = mode;
         if(customer) document.getElementById('customer').value = customer;
         document.getElementById('pax').value = pax;
@@ -191,13 +179,11 @@
         if(special) document.getElementById('specialInfo').value = special.trim();
     });
 
-    // --- 功能 2：表單攔截與彈窗確認 ---
     let pendingData = {}; 
     const modal = document.getElementById('confirmModal');
 
     document.getElementById('orderForm').addEventListener('submit', (e) => {
         e.preventDefault(); 
-        
         const modeVal = document.getElementById('mode').value;
         const paxVal = parseInt(document.getElementById('pax').value) || 1;
         const audVal = parseFloat(document.getElementById('aud').value);
@@ -227,64 +213,87 @@
         modal.classList.remove('hidden');
     });
 
-    document.getElementById('cancelBtn').addEventListener('click', () => {
-        modal.classList.add('hidden');
-    });
+    document.getElementById('cancelBtn').addEventListener('click', () => modal.classList.add('hidden') );
 
-    // --- 功能 3：確認存入 Firebase ---
-    document.getElementById('confirmSaveBtn').addEventListener('click', async () => {
-        document.getElementById('confirmSaveBtn').innerText = "儲存中...";
-        try {
-            await addDoc(collection(db, "orders"), pendingData);
-            modal.classList.add('hidden'); 
-            document.getElementById('confirmSaveBtn').innerText = "確認並存入";
-            
-            document.getElementById('rawOrderText').value = '';
-            document.getElementById('customer').value = '';
-            document.getElementById('pax').value = '1';
-            document.getElementById('aud').value = '';
-            document.getElementById('note').value = '';
-            document.getElementById('specialInfo').value = '';
-        } catch (error) {
-            console.error(error);
-            alert("儲存失敗，請檢查網路連線。");
-            document.getElementById('confirmSaveBtn').innerText = "確認並存入";
-        }
-    });
+    // ==========================================
+    // 第二部分：Firebase 連線與寫入 (動態載入)
+    // ==========================================
+    
+    // ⚠️ 請在這裡填寫您的 Firebase 金鑰！(只要填這裡就好)
+    const firebaseConfig = {
+        apiKey: "請填入您的API_KEY",
+        authDomain: "請填入您的authDomain",
+        projectId: "請填入您的projectId",
+        storageBucket: "請填入您的storageBucket",
+        messagingSenderId: "請填入您的messagingSenderId",
+        appId: "請填入您的appId"
+    };
 
-    // --- 即時渲染邏輯 ---
-    const q = query(collection(db, "orders"), orderBy("timestamp", "desc"));
-    onSnapshot(q, (snapshot) => {
-        const listA = document.getElementById('list-mode-a');
-        const listB = document.getElementById('list-mode-b');
-        const listC = document.getElementById('list-mode-c');
-        listA.innerHTML = ''; listB.innerHTML = ''; listC.innerHTML = '';
+    let db; // 全局資料庫變數
 
-        snapshot.forEach((doc) => {
-            const data = doc.data();
-            const paxDisplay = data.pax ? `<span class="bg-blue-100 text-blue-800 text-xs px-2 py-0.5 rounded ml-2">👤 ${data.pax}人</span>` : '';
-            
-            const cardHTML = `
-                <div class="p-3 bg-slate-50 rounded-lg border border-slate-100 hover:shadow-md transition relative">
-                    <p class="font-bold text-sm text-slate-800">${data.customer} ${paxDisplay}</p>
-                    <p class="text-xs text-slate-500 mt-1 break-words whitespace-pre-wrap">${data.note}</p>
-                    <p class="text-xs text-red-500 mt-1">${data.special_info}</p>
-                    <div class="flex justify-between items-end mt-2 border-t border-slate-200 pt-2">
-                        <span class="text-xs text-slate-400">匯率 ${data.fx_rate} </span>
-                        <div class="text-right">
-                            <span class="font-bold text-slate-800">A$ ${data.aud}</span>
-                            <p class="text-xs text-slate-500">NT$ ${data.twd.toLocaleString()}</p>
+    import("https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js").then(async (firebaseApp) => {
+        const firestore = await import("https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js");
+        
+        // 初始化 Firebase
+        const app = firebaseApp.initializeApp(firebaseConfig);
+        db = firestore.getFirestore(app);
+
+        document.getElementById('statusText').innerText = "資料庫連線成功 🟢";
+        document.getElementById('statusText').classList.replace("text-slate-500", "text-emerald-600");
+
+        // 綁定確認存入按鈕
+        document.getElementById('confirmSaveBtn').addEventListener('click', async () => {
+            document.getElementById('confirmSaveBtn').innerText = "儲存中...";
+            try {
+                await firestore.addDoc(firestore.collection(db, "orders"), pendingData);
+                modal.classList.add('hidden'); 
+                document.getElementById('confirmSaveBtn').innerText = "確認並存入";
+                document.getElementById('orderForm').reset(); // 一鍵清空表單
+                document.getElementById('rawOrderText').value = '';
+                document.getElementById('fxRate').value = '23'; // 保持預設匯率
+            } catch (error) {
+                console.error(error);
+                alert("寫入資料庫失敗，請檢查金鑰設定或權限規則。");
+                document.getElementById('confirmSaveBtn').innerText = "確認並存入";
+            }
+        });
+
+        // 即時渲染清單
+        const q = firestore.query(firestore.collection(db, "orders"), firestore.orderBy("timestamp", "desc"));
+        firestore.onSnapshot(q, (snapshot) => {
+            const listA = document.getElementById('list-mode-a');
+            const listB = document.getElementById('list-mode-b');
+            const listC = document.getElementById('list-mode-c');
+            listA.innerHTML = ''; listB.innerHTML = ''; listC.innerHTML = '';
+
+            snapshot.forEach((doc) => {
+                const data = doc.data();
+                const paxDisplay = data.pax ? `<span class="bg-blue-100 text-blue-800 text-xs px-2 py-0.5 rounded ml-2">👤 ${data.pax}人</span>` : '';
+                
+                const cardHTML = `
+                    <div class="p-3 bg-slate-50 rounded-lg border border-slate-100 hover:shadow-md transition relative">
+                        <p class="font-bold text-sm text-slate-800">${data.customer} ${paxDisplay}</p>
+                        <p class="text-xs text-slate-500 mt-1 break-words whitespace-pre-wrap">${data.note}</p>
+                        <p class="text-xs text-red-500 mt-1">${data.special_info}</p>
+                        <div class="flex justify-between items-end mt-2 border-t border-slate-200 pt-2">
+                            <span class="text-xs text-slate-400">匯率 ${data.fx_rate} </span>
+                            <div class="text-right">
+                                <span class="font-bold text-slate-800">A$ ${data.aud}</span>
+                                <p class="text-xs text-slate-500">NT$ ${data.twd.toLocaleString()}</p>
+                            </div>
                         </div>
                     </div>
-                </div>
-            `;
-            if (data.mode === 'Mode_A') listA.innerHTML += cardHTML;
-            if (data.mode === 'Mode_B') listB.innerHTML += cardHTML;
-            if (data.mode === 'Mode_C') listC.innerHTML += cardHTML;
+                `;
+                if (data.mode === 'Mode_A') listA.innerHTML += cardHTML;
+                if (data.mode === 'Mode_B') listB.innerHTML += cardHTML;
+                if (data.mode === 'Mode_C') listC.innerHTML += cardHTML;
+            });
         });
-        document.getElementById('statusText').innerText = "資料庫即時同步中 (連線正常) 🟢";
-    }, (error) => {
-        document.getElementById('statusText').innerText = "資料庫連線失敗，請檢查設定 🔴";
+
+    }).catch(err => {
+        document.getElementById('statusText').innerText = "尚未設定 Firebase 金鑰或連線失敗 🔴";
+        document.getElementById('statusText').classList.replace("text-slate-500", "text-red-500");
+        console.error("Firebase 載入失敗:", err);
     });
 </script>
 </body>
