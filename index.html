@@ -113,7 +113,288 @@
 
     // ⚠️ 請在這裡貼上您 Firebase Console 中的真實金鑰
     // For Firebase JS SDK v7.20.0 and later, measurementId is optional
-const firebaseConfig = {
+const firebaseConfig = {<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>澳洲旅遊調度與發票管理系統</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Noto Sans TC', sans-serif; background-color: #f8fafc; }
+        .card-shadow { box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); }
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+    </style>
+</head>
+<body class="p-6 max-w-7xl mx-auto relative">
+
+    <header class="mb-8 flex justify-between items-end">
+        <div>
+            <h1 class="text-3xl font-bold text-slate-800">澳洲旅遊業務總覽</h1>
+            <p class="text-slate-500 mt-2" id="statusText">系統已載入，準備就緒</p>
+        </div>
+    </header>
+
+    <!-- 0. 智慧解析區 -->
+    <section class="mb-6 bg-blue-50 p-6 rounded-xl border border-blue-200 shadow-sm">
+        <h2 class="text-lg font-bold text-blue-800 mb-2">⚡ 智慧文字解析 (貼上 LINE 訂單)</h2>
+        <textarea id="rawOrderText" rows="4" class="w-full p-3 border border-blue-300 rounded-md focus:ring-blue-500" placeholder="在此貼上 LINE 群組的原始文字訂單..."></textarea>
+        <div class="mt-3 flex justify-end">
+            <button type="button" id="parseBtn" class="bg-blue-600 text-white px-6 py-2 rounded-lg font-bold hover:bg-blue-700 transition">
+                自動解析欄位 ↓
+            </button>
+        </div>
+    </section>
+
+    <!-- 1. 表單區塊 (已擴充人數欄位) -->
+    <section class="mb-10 bg-white p-6 rounded-xl border border-slate-200 card-shadow">
+        <form id="orderForm" class="grid grid-cols-1 md:grid-cols-5 gap-4">
+            <div class="md:col-span-1">
+                <label class="block text-sm font-medium text-slate-700">經營模式</label>
+                <select id="mode" class="mt-1 block w-full p-2 border border-slate-300 rounded-md bg-slate-50" required>
+                    <option value="Mode_A">Mode A: 自營自出</option>
+                    <option value="Mode_B">Mode B: 轉給同業</option>
+                    <option value="Mode_C">Mode C: 同業轉入</option>
+                </select>
+            </div>
+            <div class="md:col-span-1">
+                <label class="block text-sm font-medium text-slate-700">旅客姓名 / 訂單號</label>
+                <input type="text" id="customer" class="mt-1 block w-full p-2 border border-slate-300 rounded-md" required>
+            </div>
+            <!-- 新增：人數欄位 -->
+            <div class="md:col-span-1">
+                <label class="block text-sm font-medium text-slate-700">人數 (Pax)</label>
+                <input type="number" id="pax" value="1" min="1" class="mt-1 block w-full p-2 border border-slate-300 rounded-md" required>
+            </div>
+            <div class="md:col-span-1">
+                <label class="block text-sm font-medium text-slate-700">總額 (AUD)</label>
+                <input type="number" step="0.01" id="aud" class="mt-1 block w-full p-2 border border-slate-300 rounded-md" required>
+            </div>
+            <div class="md:col-span-1">
+                <label class="block text-sm font-medium text-slate-700">匯率</label>
+                <input type="number" step="0.01" id="fxRate" value="23" class="mt-1 block w-full p-2 border border-slate-300 rounded-md" required>
+            </div>
+            <div class="md:col-span-3">
+                <label class="block text-sm font-medium text-slate-700">行程詳情 / 備註</label>
+                <textarea id="note" rows="1" class="mt-1 block w-full p-2 border border-slate-300 rounded-md"></textarea>
+            </div>
+            <div class="md:col-span-2">
+                <label class="block text-sm font-medium text-slate-700">特殊資訊 (體重/出發日等)</label>
+                <input type="text" id="specialInfo" class="mt-1 block w-full p-2 border border-slate-300 rounded-md">
+            </div>
+            <div class="md:col-span-5 flex justify-end mt-2">
+                <button type="submit" class="bg-emerald-600 text-white px-8 py-2 rounded-lg font-bold hover:bg-emerald-700 transition">
+                    預覽並準備存檔
+                </button>
+            </div>
+        </form>
+    </section>
+
+    <!-- 2. 即時顯示訂單區塊 -->
+    <main class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <section class="bg-white rounded-xl border border-emerald-200 overflow-hidden shadow-sm">
+            <div class="bg-emerald-50 p-4 border-b border-emerald-100"><h3 class="text-lg font-bold text-emerald-800">📦 自營接單 (A)</h3></div>
+            <div id="list-mode-a" class="p-4 space-y-4 max-h-96 overflow-y-auto no-scrollbar"></div>
+        </section>
+        <section class="bg-white rounded-xl border border-orange-200 overflow-hidden shadow-sm">
+            <div class="bg-orange-50 p-4 border-b border-orange-100"><h3 class="text-lg font-bold text-orange-800">📤 轉給同業 (B)</h3></div>
+            <div id="list-mode-b" class="p-4 space-y-4 max-h-96 overflow-y-auto no-scrollbar"></div>
+        </section>
+        <section class="bg-white rounded-xl border border-purple-200 overflow-hidden shadow-sm">
+            <div class="bg-purple-50 p-4 border-b border-purple-100"><h3 class="text-lg font-bold text-purple-800">📥 同業轉入 (C)</h3></div>
+            <div id="list-mode-c" class="p-4 space-y-4 max-h-96 overflow-y-auto no-scrollbar"></div>
+        </section>
+    </main>
+
+    <!-- 3. 確認彈窗 (Modal) -->
+    <div id="confirmModal" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden flex items-center justify-center backdrop-blur-sm">
+        <div class="bg-white p-8 rounded-2xl shadow-2xl max-w-md w-full">
+            <h2 class="text-2xl font-bold text-slate-800 border-b pb-3 mb-4">確認訂單資訊</h2>
+            <div class="space-y-3 text-slate-700">
+                <p><strong>模式：</strong> <span id="modalMode" class="text-blue-600"></span></p>
+                <p><strong>姓名/單號：</strong> <span id="modalCustomer"></span></p>
+                <p><strong>人數：</strong> <span id="modalPax" class="font-bold text-blue-600"></span> 人</p>
+                <p><strong>澳幣總額：</strong> A$ <span id="modalAud" class="font-bold"></span></p>
+                <p><strong>折合台幣：</strong> NT$ <span id="modalTwd" class="font-bold text-emerald-600"></span></p>
+                <p><strong>行程備註：</strong> <span id="modalNote" class="text-sm"></span></p>
+                <p><strong>特殊資訊：</strong> <span id="modalSpecial" class="text-red-500 font-bold"></span></p>
+            </div>
+            <div class="mt-8 flex justify-end space-x-3">
+                <button type="button" id="cancelBtn" class="px-5 py-2 border border-slate-300 rounded-lg text-slate-600 hover:bg-slate-50">返回修改</button>
+                <button type="button" id="confirmSaveBtn" class="px-5 py-2 bg-blue-600 text-white rounded-lg font-bold hover:bg-blue-700">確認並存入</button>
+            </div>
+        </div>
+    </div>
+
+<script type="module">
+    import { db } from './firebase-config.js';
+    import { collection, addDoc, onSnapshot, query, orderBy } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+    // --- 功能 1：強化版智慧文字解析 ---
+    document.getElementById('parseBtn').addEventListener('click', () => {
+        const rawText = document.getElementById('rawOrderText').value;
+        if(!rawText) return alert("請先貼上文字");
+
+        let mode = 'Mode_A'; 
+        let customer = '';
+        let aud = '';
+        let special = '';
+        let pax = 1;
+        let note = '';
+        
+        // 判斷模式
+        const upperText = rawText.toUpperCase();
+        if (upperText.includes("FLIGGY") || upperText.includes("LITTLE FOX") || upperText.includes("來自")) mode = 'Mode_B'; 
+        if (rawText.includes("第三方平台") || rawText.includes("更改者資料")) mode = 'Mode_C'; 
+
+        // 1. 抓取姓名或單號
+        const nameMatch = rawText.match(/姓名[：:]\s*([^\n]+)/);
+        const orderMatch = rawText.match(/訂單詳情\s*-\s*([A-Z0-9]+)/);
+        
+        if (nameMatch) customer = nameMatch[1].trim();
+        else if (orderMatch) customer = orderMatch[1].trim();
+        else if (rawText.includes("CHUANG MIN CHI")) customer = "莊閔淇 CHUANG MIN CHI"; 
+        
+        // 2. 抓取行程 (新增)
+        const tripMatch = rawText.match(/行程-([^\n]+)/);
+        if (tripMatch) note = tripMatch[1].trim();
+        else note = "自動解析匯入";
+
+        // 3. 抓取人數 (支援 "× 2", "2位", "人數：2")
+        const paxMatch1 = rawText.match(/×\s*(\d+)/); 
+        const paxMatch2 = rawText.match(/(\d+)\s*位/);
+        const paxMatch3 = rawText.match(/人數[：:]\s*(\d+)/);
+
+        if (paxMatch1) pax = paxMatch1[1];
+        else if (paxMatch2) pax = paxMatch2[1];
+        else if (paxMatch3) pax = paxMatch3[1];
+        else if (rawText.includes("5大4小")) pax = 9;
+
+        // 4. 抓取金額 (優先找「費用」、「共計」後面的數字，避免抓到單價)
+        const totalMatch = rawText.match(/(?:費用|共計|總計)[^\d]*([0-9.]+)/);
+        if (totalMatch) {
+            aud = totalMatch[1];
+        } else {
+            // 算式或通用格式備用
+            const calcMatch = rawText.match(/=([0-9.]+)澳/);
+            const genericAudMatch = rawText.match(/(?:A\$|\$)\s*([0-9.]+)/);
+            if (calcMatch) aud = calcMatch[1];
+            else if (genericAudMatch) aud = genericAudMatch[1];
+        }
+
+        // 5. 抓特殊資訊
+        const weightMatch = rawText.match(/(\d{2,3}kg)/i);
+        if (weightMatch) special += weightMatch[1] + " ";
+        const dateMatch = rawText.match(/出發時間-([0-9-]+)/);
+        if (dateMatch) special += "出發:" + dateMatch[1];
+
+        // 自動填入表單
+        document.getElementById('mode').value = mode;
+        if(customer) document.getElementById('customer').value = customer;
+        document.getElementById('pax').value = pax; // 填入人數
+        if(aud) document.getElementById('aud').value = aud;
+        document.getElementById('note').value = note;
+        if(special) document.getElementById('specialInfo').value = special.trim();
+    });
+
+    // --- 功能 2：表單攔截與彈窗確認 ---
+    let pendingData = {}; 
+    const modal = document.getElementById('confirmModal');
+
+    document.getElementById('orderForm').addEventListener('submit', (e) => {
+        e.preventDefault(); 
+        
+        const modeVal = document.getElementById('mode').value;
+        const paxVal = parseInt(document.getElementById('pax').value) || 1;
+        const audVal = parseFloat(document.getElementById('aud').value);
+        const fxVal = parseFloat(document.getElementById('fxRate').value);
+        const twdVal = Math.round(audVal * fxVal);
+
+        pendingData = {
+            mode: modeVal,
+            customer: document.getElementById('customer').value,
+            pax: paxVal, // 存入資料庫
+            aud: audVal,
+            fx_rate: fxVal,
+            twd: twdVal,
+            note: document.getElementById('note').value,
+            special_info: document.getElementById('specialInfo').value,
+            timestamp: new Date()
+        };
+
+        document.getElementById('modalMode').innerText = document.getElementById('mode').options[document.getElementById('mode').selectedIndex].text;
+        document.getElementById('modalCustomer').innerText = pendingData.customer;
+        document.getElementById('modalPax').innerText = pendingData.pax;
+        document.getElementById('modalAud').innerText = pendingData.aud;
+        document.getElementById('modalTwd').innerText = pendingData.twd.toLocaleString();
+        document.getElementById('modalNote').innerText = pendingData.note;
+        document.getElementById('modalSpecial').innerText = pendingData.special_info;
+
+        modal.classList.remove('hidden');
+    });
+
+    document.getElementById('cancelBtn').addEventListener('click', () => {
+        modal.classList.add('hidden');
+    });
+
+    // --- 功能 3：確認存入 Firebase ---
+    document.getElementById('confirmSaveBtn').addEventListener('click', async () => {
+        document.getElementById('confirmSaveBtn').innerText = "儲存中...";
+        try {
+            await addDoc(collection(db, "orders"), pendingData);
+            modal.classList.add('hidden'); 
+            document.getElementById('confirmSaveBtn').innerText = "確認並存入";
+            
+            document.getElementById('rawOrderText').value = '';
+            document.getElementById('customer').value = '';
+            document.getElementById('pax').value = '1';
+            document.getElementById('aud').value = '';
+            document.getElementById('note').value = '';
+            document.getElementById('specialInfo').value = '';
+        } catch (error) {
+            console.error(error);
+            alert("儲存失敗，請檢查網路連線。");
+            document.getElementById('confirmSaveBtn').innerText = "確認並存入";
+        }
+    });
+
+    // --- 即時渲染邏輯 ---
+    const q = query(collection(db, "orders"), orderBy("timestamp", "desc"));
+    onSnapshot(q, (snapshot) => {
+        const listA = document.getElementById('list-mode-a');
+        const listB = document.getElementById('list-mode-b');
+        const listC = document.getElementById('list-mode-c');
+        listA.innerHTML = ''; listB.innerHTML = ''; listC.innerHTML = '';
+
+        snapshot.forEach((doc) => {
+            const data = doc.data();
+            const paxDisplay = data.pax ? `<span class="bg-blue-100 text-blue-800 text-xs px-2 py-0.5 rounded ml-2">👤 ${data.pax}人</span>` : '';
+            
+            const cardHTML = `
+                <div class="p-3 bg-slate-50 rounded-lg border border-slate-100 hover:shadow-md transition relative">
+                    <p class="font-bold text-sm text-slate-800">${data.customer} ${paxDisplay}</p>
+                    <p class="text-xs text-slate-500 mt-1">${data.note} | <span class="text-red-500">${data.special_info}</span></p>
+                    <div class="flex justify-between items-end mt-2 border-t border-slate-200 pt-2">
+                        <span class="text-xs text-slate-400">匯率 ${data.fx_rate} </span>
+                        <div class="text-right">
+                            <span class="font-bold text-slate-800">A$ ${data.aud}</span>
+                            <p class="text-xs text-slate-500">NT$ ${data.twd.toLocaleString()}</p>
+                        </div>
+                    </div>
+                </div>
+            `;
+            if (data.mode === 'Mode_A') listA.innerHTML += cardHTML;
+            if (data.mode === 'Mode_B') listB.innerHTML += cardHTML;
+            if (data.mode === 'Mode_C') listC.innerHTML += cardHTML;
+        });
+        document.getElementById('statusText').innerText = "資料庫即時同步中 (連線正常) 🟢";
+    }, (error) => {
+        document.getElementById('statusText').innerText = "資料庫連線失敗，請檢查設定 🔴";
+    });
+</script>
+</body>
+</html>
   apiKey: "AIzaSyCBKoPGs0TW6VI1Ws3-61USpjARQR-O8Mc",
   authDomain: "aus-travel-system.firebaseapp.com",
   projectId: "aus-travel-system",
