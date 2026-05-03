@@ -1,0 +1,23 @@
+/* 自定義經營模式標籤顏色 */
+.mode-tag {
+    font-weight: 600;
+    padding: 2px 10px;
+    border-radius: 20px;
+    font-size: 0.75rem;
+}
+
+.mode-a { background-color: #d1fae5; color: #065f46; border: 1px solid #10b981; } /* 自營 */
+.mode-b { background-color: #ffedd5; color: #9a3412; border: 1px solid #f97316; } /* 轉出 */
+.mode-c { background-color: #f3e8ff; color: #581c87; border: 1px solid #a855f7; } /* 轉入 */
+
+/* 模擬進度條樣式（用於財務分期付款） */
+.progress-bar {
+    height: 8px;
+    background-color: #e2e8f0;
+    border-radius: 4px;
+    overflow: hidden;
+}
+.progress-fill {
+    height: 100%;
+    background-color: #3b82f6;
+}

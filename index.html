@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>澳洲旅遊調度與發票管理系統</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Noto Sans TC', sans-serif; background-color: #f8fafc; }
+        .card-shadow { box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06); }
+    </style>
+</head>
+<body class="p-6">
+    <header class="mb-8">
+        <h1 class="text-3xl font-bold text-slate-800">澳洲旅遊業務總覽</h1>
+        <p class="text-slate-500 mt-2">當前日期：2026-05-03 | 匯率參考：1 AUD = 23 TWD</p>
+    </header>
+
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-10">
+        <div class="bg-blue-600 text-white p-6 rounded-xl card-shadow">
+            <p class="text-sm opacity-80">總待收金額 (AUD)</p>
+            <h2 class="text-3xl font-bold mt-1">$4,650.8</h2>
+        </div>
+        <div class="bg-emerald-600 text-white p-6 rounded-xl card-shadow">
+            <p class="text-sm opacity-80">自營出車 (Mode A)</p>
+            <h2 class="text-3xl font-bold mt-1">3 筆</h2>
+        </div>
+        <div class="bg-orange-500 text-white p-6 rounded-xl card-shadow">
+            <p class="text-sm opacity-80">轉給同業 (Mode B)</p>
+            <h2 class="text-3xl font-bold mt-1">2 筆</h2>
+        </div>
+        <div class="bg-purple-600 text-white p-6 rounded-xl card-shadow">
+            <p class="text-sm opacity-80">同業轉入 (Mode C)</p>
+            <h2 class="text-3xl font-bold mt-1">1 筆</h2>
+        </div>
+    </div>
+
+    <main class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        
+        <section class="bg-white rounded-xl border border-slate-200 overflow-hidden">
+            <div class="bg-emerald-50 p-4 border-b border-emerald-100">
+                <h3 class="text-lg font-bold text-emerald-800">📦 自營接單 (Mode A)</h3>
+            </div>
+            <div class="p-4 space-y-4">
+                <div class="p-3 bg-slate-50 rounded-lg border border-slate-100">
+                    <p class="font-bold">吳宜安 (WU I AN)</p>
+                    <p class="text-sm text-slate-500">5/11 大洋路深度 / 5/13 火車企鵝 </p>
+                    <div class="flex justify-between items-center mt-2">
+                        <span class="text-xs px-2 py-1 bg-green-100 text-green-700 rounded-full">已支付 (5/2) </span>
+                        <span class="text-emerald-700 font-bold">A$ 357</span>
+                    </div>
+                </div>
+                <div class="p-3 bg-slate-50 rounded-lg border border-slate-100">
+                    <p class="font-bold">CHEN CHING YEN</p>
+                    <p class="text-sm text-slate-500">7/27-28 滑雪兩日遊 </p>
+                    <div class="flex justify-between items-center mt-2">
+                        <span class="text-xs px-2 py-1 bg-yellow-100 text-yellow-700 rounded-full">分筆支付中 </span>
+                        <span class="text-emerald-700 font-bold">A$ 2,926</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="bg-white rounded-xl border border-slate-200 overflow-hidden">
+            <div class="bg-orange-50 p-4 border-b border-orange-100">
+                <h3 class="text-lg font-bold text-orange-800">📤 轉給同業 (Mode B)</h3>
+            </div>
+            <div class="p-4 space-y-4">
+                <div class="p-3 bg-slate-50 rounded-lg border border-slate-100">
+                    <p class="font-bold text-sm">#DS260430XO6126 (Fliggy) </p>
+                    <p class="text-sm text-slate-500">5/03 反向大洋路10人團 </p>
+                    <div class="flex justify-between items-center mt-2">
+                        <span class="text-xs px-2 py-1 bg-red-100 text-red-700 rounded-full">尚未付款 </span>
+                        <span class="text-orange-700 font-bold">A$ 140</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="bg-white rounded-xl border border-slate-200 overflow-hidden">
+            <div class="bg-purple-50 p-4 border-b border-purple-100">
+                <h3 class="text-lg font-bold text-purple-800">📥 同業轉入 (Mode C)</h3>
+            </div>
+            <div class="p-4 space-y-4">
+                <div class="p-3 bg-slate-50 rounded-lg border border-slate-100">
+                    <p class="font-bold">莊閔淇 (CHUANG MIN CHI)</p>
+                    <p class="text-sm text-slate-500">6/3 日落駱駝 (52kg) </p>
+                    <div class="flex justify-between items-center mt-2">
+                        <span class="text-xs px-2 py-1 bg-green-100 text-green-700 rounded-full">待給同業 $245 </span>
+                        <span class="text-purple-700 font-bold">A$ 30</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <div class="mt-12 flex space-x-4">
+        <button class="px-6 py-3 bg-slate-800 text-white rounded-lg hover:bg-slate-700 transition">＋ 新增自營訂單</button>
+        <button class="px-6 py-3 border border-slate-300 text-slate-600 rounded-lg hover:bg-slate-100 transition">匯出財務月報</button>
+    </div>
+
+    <script type="module">
+        // 未來在此匯入 Firebase SDK 並實作讀取邏輯
+        console.log("系統已載入，等待 Firebase 串接...");
+    </script>
+</body>
+</html>
