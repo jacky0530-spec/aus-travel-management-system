@@ -8,154 +8,87 @@
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;700&display=swap" rel="stylesheet">
     <style>
         body { font-family: 'Noto Sans TC', sans-serif; background-color: #f8fafc; }
-        .card-shadow { box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06); }
+        .card-shadow { box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); }
     </style>
 </head>
-
-
-<body class="p-6">
+<body class="p-6 max-w-7xl mx-auto">
     <header class="mb-8">
         <h1 class="text-3xl font-bold text-slate-800">澳洲旅遊業務總覽</h1>
-        <p class="text-slate-500 mt-2">當前日期：2026-05-03 | 匯率參考：1 AUD = 23 TWD</p>
+        <p class="text-slate-500 mt-2">資料庫即時同步中...</p>
     </header>
 
-    <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-10">
-        <div class="bg-blue-600 text-white p-6 rounded-xl card-shadow">
-            <p class="text-sm opacity-80">總待收金額 (AUD)</p>
-            <h2 class="text-3xl font-bold mt-1">$4,650.8</h2>
-        </div>
-        <div class="bg-emerald-600 text-white p-6 rounded-xl card-shadow">
-            <p class="text-sm opacity-80">自營出車 (Mode A)</p>
-            <h2 class="text-3xl font-bold mt-1">3 筆</h2>
-        </div>
-        <div class="bg-orange-500 text-white p-6 rounded-xl card-shadow">
-            <p class="text-sm opacity-80">轉給同業 (Mode B)</p>
-            <h2 class="text-3xl font-bold mt-1">2 筆</h2>
-        </div>
-        <div class="bg-purple-600 text-white p-6 rounded-xl card-shadow">
-            <p class="text-sm opacity-80">同業轉入 (Mode C)</p>
-            <h2 class="text-3xl font-bold mt-1">1 筆</h2>
-        </div>
-    </div>
-<!-- 訂單輸入彈窗/區塊 -->
-<section class="mb-10 bg-white p-6 rounded-xl border border-slate-200 card-shadow">
-    <h2 class="text-xl font-bold text-slate-800 mb-4">🆕 快速錄入新訂單</h2>
-    <form id="orderForm" class="grid grid-cols-1 md:grid-cols-3 gap-4">
-        
-        <!-- 經營模式選擇 -->
-        <div>
-            <label class="block text-sm font-medium text-slate-700">經營模式</label>
-            <select id="mode" class="mt-1 block w-full p-2 border border-slate-300 rounded-md focus:ring-blue-500 focus:border-blue-500" required>
-                <option value="Mode_A">Mode A: 自營自出</option>
-                <option value="Mode_B">Mode B: 轉給同業</option>
-                <option value="Mode_C">Mode C: 同業轉入</option>
-            </select>
-        </div>
+    <!-- 1. 快速錄入新訂單表單 -->
+    <section class="mb-10 bg-white p-6 rounded-xl border border-slate-200 card-shadow">
+        <h2 class="text-xl font-bold text-slate-800 mb-4">🆕 快速錄入新訂單</h2>
+        <form id="orderForm" class="grid grid-cols-1 md:grid-cols-4 gap-4">
+            
+            <div class="md:col-span-1">
+                <label class="block text-sm font-medium text-slate-700">經營模式</label>
+                <select id="mode" class="mt-1 block w-full p-2 border border-slate-300 rounded-md bg-slate-50" required>
+                    <option value="Mode_A">Mode A: 自營自出</option>
+                    <option value="Mode_B">Mode B: 轉給同業[cite: 1]</option>
+                    <option value="Mode_C">Mode C: 同業轉入[cite: 2]</option>
+                </select>
+            </div>
 
-        <!-- 旅客姓名 -->
-        <div>
-            <label class="block text-sm font-medium text-slate-700">主要聯繫人/訂單編號</label>
-            <input type="text" id="customer" placeholder="例如：吳宜安 或 DS260..." class="mt-1 block w-full p-2 border border-slate-300 rounded-md" required>
-        </div>
+            <div class="md:col-span-1">
+                <label class="block text-sm font-medium text-slate-700">旅客姓名 / 訂單號</label>
+                <input type="text" id="customer" placeholder="例如：吳宜安" class="mt-1 block w-full p-2 border border-slate-300 rounded-md" required>
+            </div>
 
-        <!-- 費用與匯率 -->
-        <div>
-            <label class="block text-sm font-medium text-slate-700">總金額 (AUD)</label>
-            <input type="number" step="0.01" id="aud" placeholder="例如：1092.7" class="mt-1 block w-full p-2 border border-slate-300 rounded-md" required>
-        </div>
+            <!-- 新增：自訂匯率與金額 -->
+            <div class="md:col-span-1">
+                <label class="block text-sm font-medium text-slate-700">總金額 (AUD)</label>
+                <input type="number" step="0.01" id="aud" placeholder="例如：1092.7[cite: 3]" class="mt-1 block w-full p-2 border border-slate-300 rounded-md" required>
+            </div>
+            <div class="md:col-span-1">
+                <label class="block text-sm font-medium text-slate-700">自訂匯率 (預設 23)</label>
+                <input type="number" step="0.01" id="fxRate" value="23" class="mt-1 block w-full p-2 border border-slate-300 rounded-md" required>
+            </div>
 
-        <!-- 行程詳情 -->
-        <div class="md:col-span-2">
-            <label class="block text-sm font-medium text-slate-700">行程詳情 / 備註</label>
-            <textarea id="note" rows="2" placeholder="例如：7/27 滑雪日、單板、租借雪衣" class="mt-1 block w-full p-2 border border-slate-300 rounded-md"></textarea>
-        </div>
+            <div class="md:col-span-2">
+                <label class="block text-sm font-medium text-slate-700">行程詳情 / 備註</label>
+                <textarea id="note" rows="1" placeholder="例如：7/18 新手組合單板[cite: 3]" class="mt-1 block w-full p-2 border border-slate-300 rounded-md"></textarea>
+            </div>
 
-        <!-- 特殊欄位 (體重/日期) -->
-        <div>
-            <label class="block text-sm font-medium text-slate-700">特殊資訊 (體重kg / 出發日)</label>
-            <input type="text" id="specialInfo" placeholder="52kg 或 2026-05-03[cite: 1, 2]" class="mt-1 block w-full p-2 border border-slate-300 rounded-md">
-        </div>
+            <div class="md:col-span-2">
+                <label class="block text-sm font-medium text-slate-700">特殊資訊 (體重/出發日)</label>
+                <input type="text" id="specialInfo" placeholder="例如：52kg (駱駝)[cite: 2]" class="mt-1 block w-full p-2 border border-slate-300 rounded-md">
+            </div>
 
-        <!-- 提交按鈕 -->
-        <div class="md:col-span-3 flex justify-end mt-2">
-            <button type="submit" class="bg-blue-600 text-white px-8 py-2 rounded-lg font-bold hover:bg-blue-700 transition">
-                確認存入 Firebase 資料庫
-            </button>
-        </div>
-    </form>
-</section>
+            <div class="md:col-span-4 flex justify-end mt-2">
+                <button type="submit" class="bg-blue-600 text-white px-8 py-2 rounded-lg font-bold hover:bg-blue-700 transition">
+                    存入資料庫
+                </button>
+            </div>
+        </form>
+    </section>
 
+    <!-- 2. 即時顯示訂單區塊 -->
     <main class="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        
-        <section class="bg-white rounded-xl border border-slate-200 overflow-hidden">
-            <div class="bg-emerald-50 p-4 border-b border-emerald-100">
-                <h3 class="text-lg font-bold text-emerald-800">📦 自營接單 (Mode A)</h3>
-            </div>
-            <div class="p-4 space-y-4">
-                <div class="p-3 bg-slate-50 rounded-lg border border-slate-100">
-                    <p class="font-bold">吳宜安 (WU I AN)</p>
-                    <p class="text-sm text-slate-500">5/11 大洋路深度 / 5/13 火車企鵝 </p>
-                    <div class="flex justify-between items-center mt-2">
-                        <span class="text-xs px-2 py-1 bg-green-100 text-green-700 rounded-full">已支付 (5/2) </span>
-                        <span class="text-emerald-700 font-bold">A$ 357</span>
-                    </div>
-                </div>
-                <div class="p-3 bg-slate-50 rounded-lg border border-slate-100">
-                    <p class="font-bold">CHEN CHING YEN</p>
-                    <p class="text-sm text-slate-500">7/27-28 滑雪兩日遊 </p>
-                    <div class="flex justify-between items-center mt-2">
-                        <span class="text-xs px-2 py-1 bg-yellow-100 text-yellow-700 rounded-full">分筆支付中 </span>
-                        <span class="text-emerald-700 font-bold">A$ 2,926</span>
-                    </div>
-                </div>
-            </div>
+        <section class="bg-white rounded-xl border border-emerald-200 overflow-hidden shadow-sm">
+            <div class="bg-emerald-50 p-4 border-b border-emerald-100"><h3 class="text-lg font-bold text-emerald-800">📦 自營接單 (Mode A)</h3></div>
+            <div id="list-mode-a" class="p-4 space-y-4 max-h-96 overflow-y-auto"></div>
         </section>
 
-        <section class="bg-white rounded-xl border border-slate-200 overflow-hidden">
-            <div class="bg-orange-50 p-4 border-b border-orange-100">
-                <h3 class="text-lg font-bold text-orange-800">📤 轉給同業 (Mode B)</h3>
-            </div>
-            <div class="p-4 space-y-4">
-                <div class="p-3 bg-slate-50 rounded-lg border border-slate-100">
-                    <p class="font-bold text-sm">#DS260430XO6126 (Fliggy) </p>
-                    <p class="text-sm text-slate-500">5/03 反向大洋路10人團 </p>
-                    <div class="flex justify-between items-center mt-2">
-                        <span class="text-xs px-2 py-1 bg-red-100 text-red-700 rounded-full">尚未付款 </span>
-                        <span class="text-orange-700 font-bold">A$ 140</span>
-                    </div>
-                </div>
-            </div>
+        <section class="bg-white rounded-xl border border-orange-200 overflow-hidden shadow-sm">
+            <div class="bg-orange-50 p-4 border-b border-orange-100"><h3 class="text-lg font-bold text-orange-800">📤 轉給同業 (Mode B)</h3></div>
+            <div id="list-mode-b" class="p-4 space-y-4 max-h-96 overflow-y-auto"></div>
         </section>
 
-        <section class="bg-white rounded-xl border border-slate-200 overflow-hidden">
-            <div class="bg-purple-50 p-4 border-b border-purple-100">
-                <h3 class="text-lg font-bold text-purple-800">📥 同業轉入 (Mode C)</h3>
-            </div>
-            <div class="p-4 space-y-4">
-                <div class="p-3 bg-slate-50 rounded-lg border border-slate-100">
-                    <p class="font-bold">莊閔淇 (CHUANG MIN CHI)</p>
-                    <p class="text-sm text-slate-500">6/3 日落駱駝 (52kg) </p>
-                    <div class="flex justify-between items-center mt-2">
-                        <span class="text-xs px-2 py-1 bg-green-100 text-green-700 rounded-full">待給同業 $245 </span>
-                        <span class="text-purple-700 font-bold">A$ 30</span>
-                    </div>
-                </div>
-            </div>
+        <section class="bg-white rounded-xl border border-purple-200 overflow-hidden shadow-sm">
+            <div class="bg-purple-50 p-4 border-b border-purple-100"><h3 class="text-lg font-bold text-purple-800">📥 同業轉入 (Mode C)</h3></div>
+            <div id="list-mode-c" class="p-4 space-y-4 max-h-96 overflow-y-auto"></div>
         </section>
-
     </main>
 
-    <div class="mt-12 flex space-x-4">
-        <button class="px-6 py-3 bg-slate-800 text-white rounded-lg hover:bg-slate-700 transition">＋ 新增自營訂單</button>
-        <button class="px-6 py-3 border border-slate-300 text-slate-600 rounded-lg hover:bg-slate-100 transition">匯出財務月報</button>
-    </div>
-<!-- Firebase SDK 引入 -->
-<script type="module">
-  // 引入必要的 Firebase 功能
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-  import { getFirestore, collection, addDoc, getDocs } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+    <!-- Firebase 腳本 -->
+    <script type="module">
+        // 1. 引入 Firebase
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getFirestore, collection, addDoc, onSnapshot, query, orderBy } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-  // 1. 這裡貼入您剛在 Firebase 複製的設定資訊 (firebaseConfig)
+        // ⚠️ 請填入您 Firebase Console 裡的真實設定
 const firebaseConfig = {
   apiKey: "AIzaSyCBKoPGs0TW6VI1Ws3-61USpjARQR-O8Mc",
   authDomain: "aus-travel-system.firebaseapp.com",
@@ -165,32 +98,76 @@ const firebaseConfig = {
   appId: "1:733398393106:web:370b0717ef760be29953cb",
   measurementId: "G-2CPJ8HH5PC"
 };
-  // 初始化 Firebase
-  const app = initializeApp(firebaseConfig);
-  const db = getFirestore(app);
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
 
-  // 2. 範例：新增一筆滑雪團訂單到資料庫
-  async function saveOrder() {
-    try {
-      const docRef = await addDoc(collection(db, "orders"), {
-        customer_name: "CHEN CHING YEN",
-        total_aud: 2926,
-        fx_rate: 23,
-        payment_status: "Partial_Paid",
-        travel_date: "2026-07-27",
-        mode: "Mode_A_Self" // 自營出車
-      });
-      console.log("訂單已儲存，ID: ", docRef.id);
-      alert("資料已成功上傳至 Firebase！");
-    } catch (e) {
-      console.error("儲存出錯: ", e);
-    }
-  }
+        // 2. 表單新增邏輯
+        document.getElementById('orderForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const mode = document.getElementById('mode').value;
+            const customer = document.getElementById('customer').value;
+            const audAmount = parseFloat(document.getElementById('aud').value);
+            const fxRate = parseFloat(document.getElementById('fxRate').value); // 使用自訂匯率
+            
+            // 計算台幣
+            const twdAmount = Math.round(audAmount * fxRate);
 
-  // 綁定按鈕（假設您的 HTML 中有個 id 為 saveBtn 的按鈕）
-  // document.getElementById('saveBtn').addEventListener('click', saveOrder);
-</script>
+            try {
+                await addDoc(collection(db, "orders"), {
+                    mode: mode,
+                    customer: customer,
+                    aud: audAmount,
+                    fx_rate: fxRate,
+                    twd: twdAmount,
+                    note: document.getElementById('note').value,
+                    special_info: document.getElementById('specialInfo').value,
+                    timestamp: new Date()
+                });
+                // 成功後清空部分欄位，保留匯率
+                document.getElementById('customer').value = '';
+                document.getElementById('aud').value = '';
+                document.getElementById('note').value = '';
+                document.getElementById('specialInfo').value = '';
+            } catch (error) {
+                console.error("儲存失敗：", error);
+                alert("儲存失敗，請檢查網路或 Firebase 設定。");
+            }
+        });
 
+        // 3. 即時監聽與渲染邏輯 (onSnapshot)
+        const q = query(collection(db, "orders"), orderBy("timestamp", "desc"));
+        
+        onSnapshot(q, (snapshot) => {
+            // 清空現有列表
+            const listA = document.getElementById('list-mode-a');
+            const listB = document.getElementById('list-mode-b');
+            const listC = document.getElementById('list-mode-c');
+            listA.innerHTML = ''; listB.innerHTML = ''; listC.innerHTML = '';
 
+            snapshot.forEach((doc) => {
+                const data = doc.data();
+                
+                // 產生 HTML 卡片
+                const cardHTML = `
+                    <div class="p-3 bg-slate-50 rounded-lg border border-slate-100 hover:shadow-md transition">
+                        <p class="font-bold text-sm">${data.customer}</p>
+                        <p class="text-xs text-slate-500 mt-1">${data.note} | ${data.special_info}</p>
+                        <div class="flex justify-between items-end mt-2">
+                            <span class="text-xs text-slate-400">匯率 ${data.fx_rate} </span>
+                            <div class="text-right">
+                                <span class="font-bold text-slate-800">A$ ${data.aud}</span>
+                                <p class="text-xs text-slate-500">NT$ ${data.twd.toLocaleString()}</p>
+                            </div>
+                        </div>
+                    </div>
+                `;
+
+                // 根據模式分類放入對應區塊
+                if (data.mode === 'Mode_A') listA.innerHTML += cardHTML;
+                if (data.mode === 'Mode_B') listB.innerHTML += cardHTML;
+                if (data.mode === 'Mode_C') listC.innerHTML += cardHTML;
+            });
+        });
+    </script>
 </body>
 </html>
