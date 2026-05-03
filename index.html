@@ -9,7 +9,6 @@
     <style>
         body { font-family: 'Noto Sans TC', sans-serif; background-color: #f8fafc; }
         .card-shadow { box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); }
-        /* 隱藏捲軸但可捲動 */
         .no-scrollbar::-webkit-scrollbar { display: none; }
     </style>
 </head>
@@ -18,14 +17,14 @@
     <header class="mb-8 flex justify-between items-end">
         <div>
             <h1 class="text-3xl font-bold text-slate-800">澳洲旅遊業務總覽</h1>
-            <p class="text-slate-500 mt-2">資料庫即時同步中...</p>
+            <p class="text-slate-500 mt-2" id="statusText">系統已載入，準備就緒</p>
         </div>
     </header>
 
-    <!-- 0. 智慧解析區 (貼上 LINE 訂單) -->
+    <!-- 0. 智慧解析區 -->
     <section class="mb-6 bg-blue-50 p-6 rounded-xl border border-blue-200 shadow-sm">
         <h2 class="text-lg font-bold text-blue-800 mb-2">⚡ 智慧文字解析 (貼上 LINE 訂單)</h2>
-        <textarea id="rawOrderText" rows="3" class="w-full p-3 border border-blue-300 rounded-md focus:ring-blue-500" placeholder="在此貼上 LINE 群組的原始文字訂單..."></textarea>
+        <textarea id="rawOrderText" rows="4" class="w-full p-3 border border-blue-300 rounded-md focus:ring-blue-500" placeholder="在此貼上 LINE 群組的原始文字訂單..."></textarea>
         <div class="mt-3 flex justify-end">
             <button type="button" id="parseBtn" class="bg-blue-600 text-white px-6 py-2 rounded-lg font-bold hover:bg-blue-700 transition">
                 自動解析欄位 ↓
@@ -33,7 +32,7 @@
         </div>
     </section>
 
-    <!-- 1. 表單區塊 (解析後自動填入) -->
+    <!-- 1. 表單區塊 -->
     <section class="mb-10 bg-white p-6 rounded-xl border border-slate-200 card-shadow">
         <form id="orderForm" class="grid grid-cols-1 md:grid-cols-4 gap-4">
             <div class="md:col-span-1">
@@ -72,7 +71,7 @@
         </form>
     </section>
 
-    <!-- 2. 即時顯示訂單區塊 -->
+    <!-- 2. 顯示訂單區塊 -->
     <main class="grid grid-cols-1 lg:grid-cols-3 gap-8">
         <section class="bg-white rounded-xl border border-emerald-200 overflow-hidden shadow-sm">
             <div class="bg-emerald-50 p-4 border-b border-emerald-100"><h3 class="text-lg font-bold text-emerald-800">📦 自營接單 (A)</h3></div>
@@ -107,15 +106,26 @@
         </div>
     </div>
 
-    <!-- Firebase 與 邏輯腳本 -->
 <script type="module">
-    // 1. 從獨立設定檔引入已初始化的資料庫連線
-    import { db } from './firebase-config.js';
-    
-    // 2. 引入其他操作資料庫所需的功能
-    import { collection, addDoc, onSnapshot, query, orderBy } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+    // 直接引入 Firebase 核心套件 (不再使用外部檔案)
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+    import { getFirestore, collection, addDoc, onSnapshot, query, orderBy } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-    // --- 功能 1：智慧文字解析 ---
+    // ⚠️ 請在這裡貼上您 Firebase Console 中的真實金鑰
+    const firebaseConfig = {
+        apiKey: "您的API_KEY",
+        authDomain: "您的專案ID.firebaseapp.com",
+        projectId: "您的專案ID",
+        storageBucket: "您的專案ID.appspot.com",
+        messagingSenderId: "您的發送ID",
+        appId: "您的APP_ID"
+    };
+
+    // 初始化資料庫
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+
+    // --- 功能 1：強化版智慧文字解析 ---
     document.getElementById('parseBtn').addEventListener('click', () => {
         const rawText = document.getElementById('rawOrderText').value;
         if(!rawText) return alert("請先貼上文字");
@@ -126,26 +136,34 @@
         let special = '';
         
         // 判斷模式
-        if (rawText.includes("來自 FLIGGY") || rawText.includes("LITTLE FOX")) mode = 'Mode_B'; 
+        const upperText = rawText.toUpperCase();
+        if (upperText.includes("FLIGGY") || upperText.includes("LITTLE FOX")) mode = 'Mode_B'; 
         if (rawText.includes("第三方平台") || rawText.includes("更改者資料")) mode = 'Mode_C'; 
 
-        // 抓取姓名或單號
-        const nameMatch = rawText.match(/姓名：([^\n]+)|訂單詳情\s*-\s*([A-Z0-9]+)/);
+        // 1. 抓取姓名或單號 (支援「姓名：」與「訂單詳情 -」格式)
+        const nameMatch = rawText.match(/姓名[：:]\s*([^\n]+)/);
+        const orderMatch = rawText.match(/訂單詳情\s*-\s*([A-Z0-9]+)/);
+        
         if (nameMatch) {
-            customer = (nameMatch[1] || nameMatch[2]).trim();
+            customer = nameMatch[1].trim();
+        } else if (orderMatch) {
+            customer = orderMatch[1].trim();
         } else if (rawText.includes("CHUANG MIN CHI")) {
             customer = "莊閔淇 CHUANG MIN CHI"; 
+        } else if (rawText.includes("LIAO HSIAO CHING")) {
+            customer = "廖筱菁 LIAO HSIAO CHING"; 
         }
 
-        // 抓取金額
-        const audMatch = rawText.match(/(?:A\$|\$|費用：|共計：?)\s*([0-9.]+)(?:\s*澳)?/);
-        if (audMatch) aud = audMatch[1];
-        
-        // 針對算式
-        const calcMatch = rawText.match(/=([0-9.]+)澳/);
-        if (calcMatch) aud = calcMatch[1];
+        // 2. 抓取金額 (支援 A$ 140, $30澳, 357澳 等多種混雜格式)
+        const audFormat1 = rawText.match(/(?:A\$|\$)\s*([0-9.]+)/); // 抓 A$ 140
+        const audFormat2 = rawText.match(/=\s*([0-9.]+)\s*澳/);    // 抓 =357澳
+        const audFormat3 = rawText.match(/([0-9.]+)\s*澳/);         // 抓 30澳
 
-        // 抓取特殊資訊
+        if (audFormat2) { aud = audFormat2[1]; }
+        else if (audFormat1) { aud = audFormat1[1]; }
+        else if (audFormat3) { aud = audFormat3[1]; }
+
+        // 3. 抓取特殊資訊 (體重、出發日)
         const weightMatch = rawText.match(/(\d{2,3}kg)/i);
         if (weightMatch) special += weightMatch[1] + " ";
         
@@ -157,7 +175,7 @@
         if(customer) document.getElementById('customer').value = customer;
         if(aud) document.getElementById('aud').value = aud;
         if(special) document.getElementById('specialInfo').value = special.trim();
-        document.getElementById('note').value = "自動解析匯入";
+        document.getElementById('note').value = "已自動提取資訊";
     });
 
     // --- 功能 2：表單攔截與彈窗確認 ---
@@ -167,7 +185,6 @@
     document.getElementById('orderForm').addEventListener('submit', (e) => {
         e.preventDefault(); 
         
-        // 收集資料計算台幣
         const modeVal = document.getElementById('mode').value;
         const audVal = parseFloat(document.getElementById('aud').value);
         const fxVal = parseFloat(document.getElementById('fxRate').value);
@@ -184,7 +201,6 @@
             timestamp: new Date()
         };
 
-        // 填入彈窗
         document.getElementById('modalMode').innerText = document.getElementById('mode').options[document.getElementById('mode').selectedIndex].text;
         document.getElementById('modalCustomer').innerText = pendingData.customer;
         document.getElementById('modalAud').innerText = pendingData.aud;
@@ -192,11 +208,9 @@
         document.getElementById('modalNote').innerText = pendingData.note;
         document.getElementById('modalSpecial').innerText = pendingData.special_info;
 
-        // 顯示彈窗
         modal.classList.remove('hidden');
     });
 
-    // 取消按鈕
     document.getElementById('cancelBtn').addEventListener('click', () => {
         modal.classList.add('hidden');
     });
@@ -209,7 +223,6 @@
             modal.classList.add('hidden'); 
             document.getElementById('confirmSaveBtn').innerText = "確認並存入";
             
-            // 清空表單
             document.getElementById('rawOrderText').value = '';
             document.getElementById('customer').value = '';
             document.getElementById('aud').value = '';
@@ -217,7 +230,7 @@
             document.getElementById('specialInfo').value = '';
         } catch (error) {
             console.error(error);
-            alert("儲存失敗，請檢查連線。");
+            alert("儲存失敗，請檢查金鑰設定。");
             document.getElementById('confirmSaveBtn').innerText = "確認並存入";
         }
     });
@@ -249,6 +262,9 @@
             if (data.mode === 'Mode_B') listB.innerHTML += cardHTML;
             if (data.mode === 'Mode_C') listC.innerHTML += cardHTML;
         });
+        document.getElementById('statusText').innerText = "資料庫即時同步中 (連線正常) 🟢";
+    }, (error) => {
+        document.getElementById('statusText').innerText = "資料庫連線失敗，請檢查設定 🔴";
     });
 </script>
 </body>
