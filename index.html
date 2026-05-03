@@ -109,146 +109,149 @@
 
     <!-- Firebase 與 邏輯腳本 -->
 <script type="module">
-    // 1. 引入剛剛寫好的獨立設定檔中的 db
+    // 1. 從獨立設定檔引入已初始化的資料庫連線
     import { db } from './firebase-config.js';
     
     // 2. 引入其他操作資料庫所需的功能
     import { collection, addDoc, onSnapshot, query, orderBy } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-        const app = initializeApp(firebaseConfig);
-        const db = getFirestore(app);
+    // ⚠️ 注意：這裡不需要再寫 const app = initializeApp(...) 了，因為 firebase-config.js 已經做完了。
 
-        // --- 功能 1：智慧文字解析 ---
-        document.getElementById('parseBtn').addEventListener('click', () => {
-            const rawText = document.getElementById('rawOrderText').value;
-            if(!rawText) return alert("請先貼上文字");
+    // --- 功能 1：智慧文字解析 ---
+    document.getElementById('parseBtn').addEventListener('click', () => {
+        const rawText = document.getElementById('rawOrderText').value;
+        if(!rawText) return alert("請先貼上文字");
 
-            let mode = 'Mode_A'; // 預設自營
-            let customer = '';
-            let aud = '';
-            let special = '';
+        let mode = 'Mode_A'; // 預設自營
+        let customer = '';
+        let aud = '';
+        let special = '';
+        
+        // 判斷模式 (根據您的資料特徵)
+        if (rawText.includes("來自 FLIGGY") || rawText.includes("LITTLE FOX")) mode = 'Mode_B'; // 轉出
+        if (rawText.includes("第三方平台") || rawText.includes("更改者資料")) mode = 'Mode_C'; // 轉入
+
+        // 抓取姓名或單號
+        const nameMatch = rawText.match(/姓名：([^\n]+)|訂單詳情\s*-\s*([A-Z0-9]+)/);
+        if (nameMatch) {
+            customer = (nameMatch[1] || nameMatch[2]).trim();
+        } else if (rawText.includes("CHUANG MIN CHI")) {
+            customer = "莊閔淇 CHUANG MIN CHI"; // 如果是第三方格式，找特定名字
+        }
+
+        // 抓取金額 (A$ 140, 357澳, $30澳 等格式)
+        const audMatch = rawText.match(/(?:A\$|\$|費用：|共計：?)\s*([0-9.]+)(?:\s*澳)?/);
+        if (audMatch) aud = audMatch[1];
+        
+        // 針對算式如 128+229=357澳
+        const calcMatch = rawText.match(/=([0-9.]+)澳/);
+        if (calcMatch) aud = calcMatch[1];
+
+        // 抓取特殊資訊 (體重 或 出發日)
+        const weightMatch = rawText.match(/(\d{2,3}kg)/i);
+        if (weightMatch) special += weightMatch[1] + " ";
+        
+        const dateMatch = rawText.match(/出發時間-([0-9-]+)/);
+        if (dateMatch) special += "出發:" + dateMatch[1];
+
+        // 自動填入表單
+        document.getElementById('mode').value = mode;
+        if(customer) document.getElementById('customer').value = customer;
+        if(aud) document.getElementById('aud').value = aud;
+        if(special) document.getElementById('specialInfo').value = special.trim();
+        document.getElementById('note').value = "自動解析匯入";
+    });
+
+    // --- 功能 2：表單攔截與彈窗確認 ---
+    let pendingData = {}; // 暫存準備儲存的資料
+    const modal = document.getElementById('confirmModal');
+
+    document.getElementById('orderForm').addEventListener('submit', (e) => {
+        e.preventDefault(); // 阻止直接送出
+        
+        // 收集資料計算台幣
+        const modeVal = document.getElementById('mode').value;
+        const audVal = parseFloat(document.getElementById('aud').value);
+        const fxVal = parseFloat(document.getElementById('fxRate').value);
+        const twdVal = Math.round(audVal * fxVal);
+
+        pendingData = {
+            mode: modeVal,
+            customer: document.getElementById('customer').value,
+            aud: audVal,
+            fx_rate: fxVal,
+            twd: twdVal,
+            note: document.getElementById('note').value,
+            special_info: document.getElementById('specialInfo').value,
+            timestamp: new Date()
+        };
+
+        // 填入彈窗
+        document.getElementById('modalMode').innerText = document.getElementById('mode').options[document.getElementById('mode').selectedIndex].text;
+        document.getElementById('modalCustomer').innerText = pendingData.customer;
+        document.getElementById('modalAud').innerText = pendingData.aud;
+        document.getElementById('modalTwd').innerText = pendingData.twd.toLocaleString();
+        document.getElementById('modalNote').innerText = pendingData.note;
+        document.getElementById('modalSpecial').innerText = pendingData.special_info;
+
+        // 顯示彈窗
+        modal.classList.remove('hidden');
+    });
+
+    // 取消按鈕
+    document.getElementById('cancelBtn').addEventListener('click', () => {
+        modal.classList.add('hidden');
+    });
+
+    // --- 功能 3：確認存入 Firebase ---
+    document.getElementById('confirmSaveBtn').addEventListener('click', async () => {
+        document.getElementById('confirmSaveBtn').innerText = "儲存中...";
+        try {
+            await addDoc(collection(db, "orders"), pendingData);
+            modal.classList.add('hidden'); // 隱藏彈窗
+            document.getElementById('confirmSaveBtn').innerText = "確認並存入";
             
-            // 判斷模式 (根據您的資料特徵)
-            if (rawText.includes("來自 FLIGGY") || rawText.includes("LITTLE FOX")) mode = 'Mode_B'; // 轉出[cite: 1]
-            if (rawText.includes("第三方平台") || rawText.includes("更改者資料")) mode = 'Mode_C'; // 轉入
+            // 清空表單
+            document.getElementById('rawOrderText').value = '';
+            document.getElementById('customer').value = '';
+            document.getElementById('aud').value = '';
+            document.getElementById('note').value = '';
+            document.getElementById('specialInfo').value = '';
+        } catch (error) {
+            console.error(error);
+            alert("儲存失敗，請檢查連線。");
+            document.getElementById('confirmSaveBtn').innerText = "確認並存入";
+        }
+    });
 
-            // 抓取姓名或單號
-            const nameMatch = rawText.match(/姓名：([^\n]+)|訂單詳情\s*-\s*([A-Z0-9]+)/);
-            if (nameMatch) customer = (nameMatch[1] || nameMatch[2]).trim();
-            // 如果是第三方格式，找英文名字或中文名字
-            else if (rawText.includes("CHUANG MIN CHI")) customer = "莊閔淇 CHUANG MIN CHI";[cite: 2]
+    // --- 即時渲染邏輯 ---
+    const q = query(collection(db, "orders"), orderBy("timestamp", "desc"));
+    onSnapshot(q, (snapshot) => {
+        const listA = document.getElementById('list-mode-a');
+        const listB = document.getElementById('list-mode-b');
+        const listC = document.getElementById('list-mode-c');
+        listA.innerHTML = ''; listB.innerHTML = ''; listC.innerHTML = '';
 
-            // 抓取金額 (A$ 140, 357澳, $30澳 等格式)
-            const audMatch = rawText.match(/(?:A\$|\$|費用：|共計：?)\s*([0-9.]+)(?:\s*澳)?/);
-            if (audMatch) aud = audMatch[1];
-            // 針對算式如 128+229=357澳
-            const calcMatch = rawText.match(/=([0-9.]+)澳/);
-            if (calcMatch) aud = calcMatch[1];
-
-            // 抓取特殊資訊 (體重 或 出發日)
-            const weightMatch = rawText.match(/(\d{2,3}kg)/i);
-            if (weightMatch) special += weightMatch[1] + " ";[cite: 2]
-            const dateMatch = rawText.match(/出發時間-([0-9-]+)/);
-            if (dateMatch) special += "出發:" + dateMatch[1];[cite: 1]
-
-            // 自動填入表單
-            document.getElementById('mode').value = mode;
-            if(customer) document.getElementById('customer').value = customer;
-            if(aud) document.getElementById('aud').value = aud;
-            if(special) document.getElementById('specialInfo').value = special.trim();
-            document.getElementById('note').value = "自動解析匯入";
-        });
-
-        // --- 功能 2：表單攔截與彈窗確認 ---
-        let pendingData = {}; // 暫存準備儲存的資料
-        const modal = document.getElementById('confirmModal');
-
-        document.getElementById('orderForm').addEventListener('submit', (e) => {
-            e.preventDefault(); // 阻止直接送出
-            
-            // 收集資料計算台幣
-            const modeVal = document.getElementById('mode').value;
-            const audVal = parseFloat(document.getElementById('aud').value);
-            const fxVal = parseFloat(document.getElementById('fxRate').value);
-            const twdVal = Math.round(audVal * fxVal);
-
-            pendingData = {
-                mode: modeVal,
-                customer: document.getElementById('customer').value,
-                aud: audVal,
-                fx_rate: fxVal,
-                twd: twdVal,
-                note: document.getElementById('note').value,
-                special_info: document.getElementById('specialInfo').value,
-                timestamp: new Date()
-            };
-
-            // 填入彈窗
-            document.getElementById('modalMode').innerText = document.getElementById('mode').options[document.getElementById('mode').selectedIndex].text;
-            document.getElementById('modalCustomer').innerText = pendingData.customer;
-            document.getElementById('modalAud').innerText = pendingData.aud;
-            document.getElementById('modalTwd').innerText = pendingData.twd.toLocaleString();
-            document.getElementById('modalNote').innerText = pendingData.note;
-            document.getElementById('modalSpecial').innerText = pendingData.special_info;
-
-            // 顯示彈窗
-            modal.classList.remove('hidden');
-        });
-
-        // 取消按鈕
-        document.getElementById('cancelBtn').addEventListener('click', () => {
-            modal.classList.add('hidden');
-        });
-
-        // --- 功能 3：確認存入 Firebase ---
-        document.getElementById('confirmSaveBtn').addEventListener('click', async () => {
-            document.getElementById('confirmSaveBtn').innerText = "儲存中...";
-            try {
-                await addDoc(collection(db, "orders"), pendingData);
-                modal.classList.add('hidden'); // 隱藏彈窗
-                document.getElementById('confirmSaveBtn').innerText = "確認並存入";
-                
-                // 清空表單
-                document.getElementById('rawOrderText').value = '';
-                document.getElementById('customer').value = '';
-                document.getElementById('aud').value = '';
-                document.getElementById('note').value = '';
-                document.getElementById('specialInfo').value = '';
-            } catch (error) {
-                console.error(error);
-                alert("儲存失敗，請檢查連線。");
-                document.getElementById('confirmSaveBtn').innerText = "確認並存入";
-            }
-        });
-
-        // --- 即時渲染邏輯 ---
-        const q = query(collection(db, "orders"), orderBy("timestamp", "desc"));
-        onSnapshot(q, (snapshot) => {
-            const listA = document.getElementById('list-mode-a');
-            const listB = document.getElementById('list-mode-b');
-            const listC = document.getElementById('list-mode-c');
-            listA.innerHTML = ''; listB.innerHTML = ''; listC.innerHTML = '';
-
-            snapshot.forEach((doc) => {
-                const data = doc.data();
-                const cardHTML = `
-                    <div class="p-3 bg-slate-50 rounded-lg border border-slate-100 hover:shadow-md transition">
-                        <p class="font-bold text-sm text-slate-800">${data.customer}</p>
-                        <p class="text-xs text-slate-500 mt-1">${data.note} | <span class="text-red-500">${data.special_info}</span></p>
-                        <div class="flex justify-between items-end mt-2 border-t border-slate-200 pt-2">
-                            <span class="text-xs text-slate-400">匯率 ${data.fx_rate} </span>
-                            <div class="text-right">
-                                <span class="font-bold text-slate-800">A$ ${data.aud}</span>
-                                <p class="text-xs text-slate-500">NT$ ${data.twd.toLocaleString()}</p>
-                            </div>
+        snapshot.forEach((doc) => {
+            const data = doc.data();
+            const cardHTML = `
+                <div class="p-3 bg-slate-50 rounded-lg border border-slate-100 hover:shadow-md transition">
+                    <p class="font-bold text-sm text-slate-800">${data.customer}</p>
+                    <p class="text-xs text-slate-500 mt-1">${data.note} | <span class="text-red-500">${data.special_info}</span></p>
+                    <div class="flex justify-between items-end mt-2 border-t border-slate-200 pt-2">
+                        <span class="text-xs text-slate-400">匯率 ${data.fx_rate} </span>
+                        <div class="text-right">
+                            <span class="font-bold text-slate-800">A$ ${data.aud}</span>
+                            <p class="text-xs text-slate-500">NT$ ${data.twd.toLocaleString()}</p>
                         </div>
                     </div>
-                `;
-                if (data.mode === 'Mode_A') listA.innerHTML += cardHTML;
-                if (data.mode === 'Mode_B') listB.innerHTML += cardHTML;
-                if (data.mode === 'Mode_C') listC.innerHTML += cardHTML;
-            });
+                </div>
+            `;
+            if (data.mode === 'Mode_A') listA.innerHTML += cardHTML;
+            if (data.mode === 'Mode_B') listB.innerHTML += cardHTML;
+            if (data.mode === 'Mode_C') listC.innerHTML += cardHTML;
         });
-    </script>
+    });
+</script>
 </body>
 </html>
