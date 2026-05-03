@@ -33,9 +33,8 @@
         <button onclick="switchTab('report')" id="tab-report" class="nav-btn flex-1 py-3 text-center text-slate-600 hover:bg-slate-50 transition">📈 報表查詢</button>
     </nav>
 
-    <!-- 輸入區域 (在報表頁面會隱藏) -->
+    <!-- 輸入區域 -->
     <div id="inputSection">
-        <!-- 0. 智慧解析區 -->
         <section class="mb-6 bg-blue-50 p-5 rounded-xl border border-blue-200 shadow-sm">
             <h2 class="text-base font-bold text-blue-800 mb-2">⚡ 智慧文字解析 (貼上 LINE 訂單)</h2>
             <textarea id="rawOrderText" rows="3" class="w-full p-2 border border-blue-300 rounded-md text-sm focus:ring-blue-500" placeholder="在此貼上 LINE 群組的原始文字訂單..."></textarea>
@@ -44,7 +43,6 @@
             </div>
         </section>
 
-        <!-- 1. 表單區塊 -->
         <section class="mb-8 bg-white p-5 rounded-xl border border-slate-200 card-shadow transition-colors duration-300" id="formSection">
             <h2 id="formTitle" class="text-lg font-bold text-slate-800 mb-3">🆕 快速錄入新訂單</h2>
             <form id="orderForm" class="grid grid-cols-1 md:grid-cols-6 gap-3">
@@ -95,7 +93,6 @@
 
     <!-- ================= 視圖切換區 ================= -->
     
-    <!-- 視圖 1：首頁總覽 (三欄顯示) -->
     <main id="view-dashboard" class="view-section grid grid-cols-1 lg:grid-cols-3 gap-6">
         <section class="bg-white rounded-xl border border-emerald-200 overflow-hidden shadow-sm">
             <div class="bg-emerald-50 p-3 border-b border-emerald-100"><h3 class="font-bold text-emerald-800">📦 自營接單 (A)</h3></div>
@@ -111,20 +108,16 @@
         </section>
     </main>
 
-    <!-- 視圖 2：單一模式列表 (自營/轉出/轉入 共用) -->
     <main id="view-single-mode" class="view-section hidden">
         <section class="bg-white rounded-xl border border-slate-200 overflow-hidden shadow-sm">
             <div class="bg-slate-100 p-4 border-b border-slate-200 flex justify-between items-center">
                 <h3 class="text-lg font-bold text-slate-800" id="single-mode-title">模式列表</h3>
             </div>
-            <!-- 使用 CSS Grid 變成列表排版 -->
             <div id="single-mode-list" class="p-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"></div>
         </section>
     </main>
 
-    <!-- 視圖 3：報表查詢網頁 -->
     <main id="view-report" class="view-section hidden">
-        <!-- 報表狀態看板 -->
         <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
             <div class="bg-white p-5 rounded-xl card-shadow border-l-4 border-blue-500">
                 <p class="text-sm text-slate-500 mb-1">系統總訂單數</p>
@@ -140,7 +133,6 @@
             </div>
         </div>
 
-        <!-- 報表篩選器與列表 -->
         <section class="bg-white rounded-xl border border-slate-200 overflow-hidden shadow-sm">
             <div class="bg-slate-50 p-4 border-b border-slate-200 flex justify-between items-center">
                 <h3 class="text-lg font-bold text-slate-800">訂單明細報表</h3>
@@ -163,14 +155,14 @@
                         </tr>
                     </thead>
                     <tbody id="report-table-body" class="divide-y divide-slate-100">
-                        <!-- 表格資料會由 JS 產生 -->
+                        <!-- 表格資料由 JS 產生 -->
                     </tbody>
                 </table>
             </div>
         </section>
     </main>
 
-    <!-- ================= 共用彈窗區 ================= -->
+    <!-- 共用彈窗 -->
     <div id="confirmModal" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden flex items-center justify-center backdrop-blur-sm">
         <div class="bg-white p-8 rounded-2xl shadow-2xl max-w-md w-full">
             <h2 class="text-xl font-bold text-slate-800 border-b pb-3 mb-4" id="modalTitle">確認訂單資訊</h2>
@@ -191,36 +183,23 @@
     </div>
 
 <script type="module">
-    // ==========================================
-    // 全域狀態與切換分頁邏輯
-    // ==========================================
     window.currentTab = 'dashboard';
-    window.allOrders = []; // 存放從雲端抓下來的所有訂單
+    window.allOrders = []; 
 
-    // 切換分頁 UI 函式
     window.switchTab = (tabName) => {
         window.currentTab = tabName;
-        
-        // 更新 Navbar 樣式
         document.querySelectorAll('.nav-btn').forEach(btn => btn.classList.remove('active'));
         document.getElementById(`tab-${tabName}`).classList.add('active');
-
-        // 隱藏所有視圖
         document.querySelectorAll('.view-section').forEach(view => view.classList.add('hidden'));
 
-        // 控制輸入區塊的顯示 (報表頁不顯示輸入)
         const inputSec = document.getElementById('inputSection');
         if (tabName === 'report') {
             inputSec.classList.add('hidden');
         } else {
             inputSec.classList.remove('hidden');
-            // 如果切換到特定模式，下拉選單自動切過去
-            if (['Mode_A', 'Mode_B', 'Mode_C'].includes(tabName)) {
-                document.getElementById('mode').value = tabName;
-            }
+            if (['Mode_A', 'Mode_B', 'Mode_C'].includes(tabName)) document.getElementById('mode').value = tabName;
         }
 
-        // 顯示對應視圖並重新渲染資料
         if (tabName === 'dashboard') {
             document.getElementById('view-dashboard').classList.remove('hidden');
         } else if (tabName === 'report') {
@@ -230,21 +209,15 @@
             const titles = { Mode_A: "📦 自營接單 (A)", Mode_B: "📤 轉給同業 (B)", Mode_C: "📥 同業轉入 (C)" };
             document.getElementById('single-mode-title').innerText = titles[tabName];
         }
-        
-        window.renderUI(); // 切換頁籤時重新把資料畫出來
+        window.renderUI(); 
     };
 
-    // ==========================================
-    // 第一部分：UI 重置與文字解析
-    // ==========================================
     window.resetFormUI = () => {
         window.currentEditId = null;
         document.getElementById('orderForm').reset();
         document.getElementById('fxRate').value = '23'; 
         document.getElementById('rawOrderText').value = '';
-        if (['Mode_A', 'Mode_B', 'Mode_C'].includes(window.currentTab)) {
-            document.getElementById('mode').value = window.currentTab;
-        }
+        if (['Mode_A', 'Mode_B', 'Mode_C'].includes(window.currentTab)) document.getElementById('mode').value = window.currentTab;
 
         const formTitle = document.getElementById('formTitle');
         formTitle.innerText = "🆕 快速錄入新訂單";
@@ -262,7 +235,7 @@
         const rawText = document.getElementById('rawOrderText').value;
         if(!rawText) return alert("請先貼上文字");
 
-        let mode = document.getElementById('mode').value; // 預設保留當前選擇的模式
+        let mode = document.getElementById('mode').value; 
         let customer = ''; let aud = ''; let special = ''; let pax = 1; let note = ''; let departureTime = ''; 
         
         const upperText = rawText.toUpperCase();
@@ -331,7 +304,6 @@
             departure_time: document.getElementById('departureTime').value, 
             note: document.getElementById('note').value,
             special_info: document.getElementById('specialInfo').value,
-            // 系統預設新增時狀態為 pending (未完成)
             status: window.currentEditId ? window.allOrders.find(o=>o.id === window.currentEditId).status : "pending",
             timestamp: window.currentEditId ? window.allOrders.find(o=>o.id === window.currentEditId).timestamp : new Date() 
         };
@@ -351,21 +323,22 @@
     document.getElementById('cancelBtn').addEventListener('click', () => modal.classList.add('hidden') );
 
     // ==========================================
-    // 第二部分：Firebase 與 畫面渲染引擎
+    // 第二部分：Firebase 與畫面渲染引擎
     // ==========================================
-const firebaseConfig = {
-  apiKey: "AIzaSyCBKoPGs0TW6VI1Ws3-61USpjARQR-O8Mc",
-  authDomain: "aus-travel-system.firebaseapp.com",
-  projectId: "aus-travel-system",
-  storageBucket: "aus-travel-system.firebasestorage.app",
-  messagingSenderId: "733398393106",
-  appId: "1:733398393106:web:370b0717ef760be29953cb",
-  measurementId: "G-2CPJ8HH5PC"
-};
+    
+    // ⚠️ 請填入您的 Firebase 金鑰
+    const firebaseConfig = {
+        apiKey: "請填寫",
+        authDomain: "請填寫",
+        projectId: "請填寫",
+        storageBucket: "請填寫",
+        messagingSenderId: "請填寫",
+        appId: "請填寫"
+    };
+
     let db;
     let firestoreRef; 
 
-    // 生成單一卡片的 HTML (可共用於 Dashboard 與 單一模式頁面)
     const generateCardHTML = (doc) => {
         const data = doc.data;
         const isCompleted = data.status === 'completed';
@@ -398,9 +371,7 @@ const firebaseConfig = {
         `;
     };
 
-    // 核心渲染引擎：根據 currentTab 決定要畫什麼
     window.renderUI = () => {
-        // 清空所有容器
         document.getElementById('dash-mode-a').innerHTML = '';
         document.getElementById('dash-mode-b').innerHTML = '';
         document.getElementById('dash-mode-c').innerHTML = '';
@@ -415,37 +386,45 @@ const firebaseConfig = {
             const data = doc.data;
             const cardHTML = generateCardHTML(doc);
 
-            // 統計報表數據
             if (data.status === 'completed') totalCompleted += (data.twd || 0);
             else totalPending += (data.twd || 0);
 
-            // 1. 如果在 Dashboard，分三欄渲染
             if (window.currentTab === 'dashboard') {
                 if (data.mode === 'Mode_A') document.getElementById('dash-mode-a').innerHTML += cardHTML;
                 if (data.mode === 'Mode_B') document.getElementById('dash-mode-b').innerHTML += cardHTML;
                 if (data.mode === 'Mode_C') document.getElementById('dash-mode-c').innerHTML += cardHTML;
             }
             
-            // 2. 如果在特定模式列表，只渲染該模式的卡片
             if (['Mode_A', 'Mode_B', 'Mode_C'].includes(window.currentTab)) {
-                if (data.mode === window.currentTab) {
-                    document.getElementById('single-mode-list').innerHTML += cardHTML;
-                }
+                if (data.mode === window.currentTab) document.getElementById('single-mode-list').innerHTML += cardHTML;
             }
 
-            // 3. 如果在報表頁面，渲染表格
+            // --- 報表頁面：新增滑鼠懸浮 (Hover) 顯示備註提示 ---
             if (window.currentTab === 'report') {
                 const passFilter = (reportFilter === 'all') || (data.status === reportFilter);
                 if (passFilter) {
                     const statusStr = data.status === 'completed' ? '<span class="text-emerald-600 font-bold">✅ 已完成</span>' : '<span class="text-yellow-600 font-bold">⏳ 未完成</span>';
                     const modeMap = { Mode_A: "自營", Mode_B: "轉出", Mode_C: "轉入" };
+                    
+                    // 處理 tooltip 文字，過濾雙引號防止 HTML 錯誤
+                    const cleanNote = (data.note || '無備註').replace(/"/g, '&quot;');
+                    const cleanSpecial = data.special_info ? `\n\n⚠️ 特殊資訊：\n${data.special_info}`.replace(/"/g, '&quot;') : '';
+                    const hoverText = `📝 行程與金流備註：\n------------------------\n${cleanNote}${cleanSpecial}`;
+
                     document.getElementById('report-table-body').innerHTML += `
-                        <tr class="hover:bg-slate-50 border-b border-slate-100">
+                        <tr class="hover:bg-slate-50 border-b border-slate-100 transition cursor-help" title="${hoverText}">
                             <td class="p-3">${statusStr}</td>
                             <td class="p-3">${modeMap[data.mode]}</td>
-                            <td class="p-3 font-bold">${data.customer} <span class="text-xs text-slate-400">(${data.pax}人)</span></td>
-                            <td class="p-3">${data.departure_time || '-'}</td>
-                            <td class="p-3">A$ ${data.aud} <br><span class="text-xs text-slate-500">NT$ ${data.twd.toLocaleString()}</span></td>
+                            <td class="p-3 font-bold">
+                                ${data.customer} <span class="text-xs text-slate-400">(${data.pax}人)</span>
+                                <div class="mt-1">
+                                    <span class="inline-flex items-center text-[10px] bg-blue-50 text-blue-600 border border-blue-200 px-1.5 py-0.5 rounded shadow-sm">
+                                        💬 停駐看備註
+                                    </span>
+                                </div>
+                            </td>
+                            <td class="p-3 text-orange-600 font-bold">${data.departure_time || '-'}</td>
+                            <td class="p-3 font-bold">A$ ${data.aud} <br><span class="text-xs text-slate-500 font-normal">NT$ ${data.twd.toLocaleString()}</span></td>
                             <td class="p-3">
                                 <button onclick="editOrder('${doc.id}')" class="text-blue-600 hover:underline text-xs mr-2">修改</button>
                                 <button onclick="deleteOrder('${doc.id}')" class="text-red-600 hover:underline text-xs">刪除</button>
@@ -456,7 +435,6 @@ const firebaseConfig = {
             }
         });
 
-        // 更新報表數字
         if (document.getElementById('rep-total-count')) {
             document.getElementById('rep-total-count').innerText = window.allOrders.length;
             document.getElementById('rep-pending-sum').innerText = "NT$ " + totalPending.toLocaleString();
@@ -472,7 +450,6 @@ const firebaseConfig = {
         document.getElementById('statusText').innerText = "資料庫連線成功 🟢";
         document.getElementById('statusText').classList.replace("text-slate-500", "text-emerald-600");
 
-        // 寫入資料
         document.getElementById('confirmSaveBtn').addEventListener('click', () => {
             const btn = document.getElementById('confirmSaveBtn');
             btn.disabled = true; btn.innerText = "寫入中...";
@@ -489,7 +466,6 @@ const firebaseConfig = {
             }
         });
 
-        // 全域操作功能
         window.deleteOrder = (id) => {
             if (confirm('確定要刪除這筆訂單嗎？')) firestoreRef.deleteDoc(firestoreRef.doc(db, "orders", id));
         };
@@ -514,7 +490,6 @@ const firebaseConfig = {
             document.getElementById('note').value = data.note || '';
             document.getElementById('specialInfo').value = data.special_info || '';
 
-            // 如果在報表頁點擊修改，強制切回 Dashboard 讓使用者看到輸入框
             if(window.currentTab === 'report') window.switchTab('dashboard');
 
             document.getElementById('formTitle').innerText = "✏️ 修改訂單模式";
@@ -526,12 +501,11 @@ const firebaseConfig = {
             window.scrollTo({ top: 0, behavior: 'smooth' });
         };
 
-        // 即時監聽與核心迴圈
         const q = firestoreRef.query(firestoreRef.collection(db, "orders"), firestoreRef.orderBy("timestamp", "desc"));
         firestoreRef.onSnapshot(q, (snapshot) => {
             window.allOrders = [];
             snapshot.forEach(doc => window.allOrders.push({ id: doc.id, data: doc.data() }));
-            window.renderUI(); // 資料一來，立刻呼叫渲染引擎重繪當前頁籤
+            window.renderUI(); 
         });
 
     }).catch(err => {
