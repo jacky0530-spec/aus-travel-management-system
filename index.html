@@ -10,6 +10,9 @@
         body { font-family: 'Noto Sans TC', sans-serif; background-color: #f8fafc; }
         .card-shadow { box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); }
         .no-scrollbar::-webkit-scrollbar { display: none; }
+        /* 讓卡片在 hover 時顯示按鈕 */
+        .order-card .action-btns { opacity: 0; transition: opacity 0.2s; }
+        .order-card:hover .action-btns { opacity: 1; }
     </style>
 </head>
 <body class="p-6 max-w-7xl mx-auto relative">
@@ -32,8 +35,9 @@
         </div>
     </section>
 
-    <!-- 1. 表單區塊 (已新增出發時間) -->
-    <section class="mb-10 bg-white p-6 rounded-xl border border-slate-200 card-shadow">
+    <!-- 1. 表單區塊 -->
+    <section class="mb-10 bg-white p-6 rounded-xl border border-slate-200 card-shadow transition-colors duration-300" id="formSection">
+        <h2 id="formTitle" class="text-xl font-bold text-slate-800 mb-4 transition-colors">🆕 快速錄入新訂單</h2>
         <form id="orderForm" class="grid grid-cols-1 md:grid-cols-6 gap-4">
             <div class="md:col-span-1">
                 <label class="block text-sm font-medium text-slate-700">經營模式</label>
@@ -59,13 +63,10 @@
                 <label class="block text-sm font-medium text-slate-700">匯率</label>
                 <input type="number" step="0.01" id="fxRate" value="23" class="mt-1 block w-full p-2 border border-slate-300 rounded-md" required>
             </div>
-            <!-- 新增：出發時間 -->
             <div class="md:col-span-1">
                 <label class="block text-sm font-medium text-slate-700">出發時間</label>
                 <input type="text" id="departureTime" placeholder="如 2026-05-04 09:30" class="mt-1 block w-full p-2 border border-slate-300 rounded-md bg-yellow-50 focus:bg-white transition">
             </div>
-
-            <!-- 調整比例 -->
             <div class="md:col-span-4">
                 <label class="block text-sm font-medium text-slate-700">行程詳情 / 備註</label>
                 <textarea id="note" rows="2" class="mt-1 block w-full p-2 border border-slate-300 rounded-md"></textarea>
@@ -75,8 +76,11 @@
                 <input type="text" id="specialInfo" class="mt-1 block w-full p-2 border border-slate-300 rounded-md">
             </div>
             
-            <div class="md:col-span-6 flex justify-end mt-2">
-                <button type="submit" class="bg-emerald-600 text-white px-8 py-2 rounded-lg font-bold hover:bg-emerald-700 transition">
+            <div class="md:col-span-6 flex justify-end mt-2 space-x-3">
+                <button type="button" id="cancelEditBtn" class="hidden px-6 py-2 border border-slate-300 rounded-lg text-slate-600 hover:bg-slate-50">
+                    取消修改
+                </button>
+                <button type="submit" id="formSubmitBtn" class="bg-emerald-600 text-white px-8 py-2 rounded-lg font-bold hover:bg-emerald-700 transition">
                     預覽並準備存檔
                 </button>
             </div>
@@ -102,7 +106,7 @@
     <!-- 3. 確認彈窗 (Modal) -->
     <div id="confirmModal" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden flex items-center justify-center backdrop-blur-sm">
         <div class="bg-white p-8 rounded-2xl shadow-2xl max-w-md w-full">
-            <h2 class="text-2xl font-bold text-slate-800 border-b pb-3 mb-4">確認訂單資訊</h2>
+            <h2 class="text-2xl font-bold text-slate-800 border-b pb-3 mb-4" id="modalTitle">確認訂單資訊</h2>
             <div class="space-y-3 text-slate-700">
                 <p><strong>模式：</strong> <span id="modalMode" class="text-blue-600"></span></p>
                 <p><strong>姓名/單號：</strong> <span id="modalCustomer"></span></p>
@@ -114,13 +118,17 @@
                 <p><strong>特殊資訊：</strong> <span id="modalSpecial" class="text-red-500 font-bold"></span></p>
             </div>
             <div class="mt-8 flex justify-end space-x-3">
-                <button type="button" id="cancelBtn" class="px-5 py-2 border border-slate-300 rounded-lg text-slate-600 hover:bg-slate-50">返回修改</button>
+                <button type="button" id="cancelBtn" class="px-5 py-2 border border-slate-300 rounded-lg text-slate-600 hover:bg-slate-50">返回</button>
                 <button type="button" id="confirmSaveBtn" class="px-5 py-2 bg-blue-600 text-white rounded-lg font-bold hover:bg-blue-700">確認並存入</button>
             </div>
         </div>
     </div>
 
 <script type="module">
+    // 全局變數設計
+    let currentEditId = null; 
+    window.ordersDataMap = {}; // 暫存畫面上所有的訂單資料供修改時讀取
+
     // ==========================================
     // 第一部分：UI 與文字解析邏輯
     // ==========================================
@@ -134,14 +142,12 @@
         let special = '';
         let pax = 1;
         let note = '';
-        let departureTime = ''; // 新增時間變數
+        let departureTime = ''; 
         
-        // --- 1. 判斷模式 ---
         const upperText = rawText.toUpperCase();
         if (upperText.includes("FLIGGY") || upperText.includes("LITTLE FOX") || upperText.includes("來自")) mode = 'Mode_B'; 
         if (rawText.includes("第三方平台") || rawText.includes("更改者資料")) mode = 'Mode_C'; 
 
-        // --- 2. 抓取姓名或單號 ---
         const nameMatch = rawText.match(/姓名[：:]\s*([^\n]+)/);
         const orderMatch = rawText.match(/訂單詳情\s*-\s*([A-Z0-9]+)/);
         
@@ -150,7 +156,6 @@
         else if (rawText.includes("CHUANG MIN CHI")) customer = "莊閔淇 CHUANG MIN CHI"; 
         else if (rawText.includes("LIAO HSIAO CHING")) customer = "廖筱菁 LIAO HSIAO CHING";
         
-        // --- 3. 抓取備註 (訂單詳情 + 行程) ---
         let notesArr = [];
         const detailLineMatch = rawText.match(/訂單詳情[^\n]+/);
         if (detailLineMatch) notesArr.push(detailLineMatch[0].trim()); 
@@ -160,7 +165,6 @@
         if (notesArr.length > 0) note = notesArr.join(" | "); 
         else note = "自動解析匯入";
 
-        // --- 4. 抓取人數 ---
         const paxMatch1 = rawText.match(/×\s*(\d+)/); 
         const paxMatch2 = rawText.match(/(\d+)\s*位/);
         const paxMatch3 = rawText.match(/人數[：:]\s*(\d+)/);
@@ -170,7 +174,6 @@
         else if (paxMatch3) pax = paxMatch3[1];
         else if (rawText.includes("5大4小")) pax = 9;
 
-        // --- 5. 抓取金額 ---
         const totalMatch = rawText.match(/(?:費用|共計|總計)[^\d]*([0-9.]+)/);
         if (totalMatch) {
             aud = totalMatch[1];
@@ -181,20 +184,17 @@
             else if (genericAudMatch) aud = genericAudMatch[1];
         }
 
-        // --- 6. 抓取獨立的「出發時間」 ---
-        // 嘗試抓取 "出發時間-2026-05-04 (UTC +10:00)" 或 "09:30am-03:30pm" 或 "5月11號"
-        const timeMatch1 = rawText.match(/出發時間[^\d]*([^\n]+)/); // 抓到換行為止
-        const timeMatch2 = rawText.match(/(\d{1,2}月\d{1,2}號)/); // 抓中文日期如 5月11號
-        const timeMatch3 = rawText.match(/(\d{2}:\d{2}[am|pm]{0,2})/i); // 抓 09:30 或 09:30am
+        const timeMatch1 = rawText.match(/出發時間[^\d]*([^\n]+)/); 
+        const timeMatch2 = rawText.match(/(\d{1,2}月\d{1,2}號)/); 
+        const timeMatch3 = rawText.match(/(\d{2}:\d{2}[am|pm]{0,2})/i); 
 
         if (timeMatch1) {
             departureTime = timeMatch1[1].trim();
         } else if (timeMatch2) {
             departureTime = timeMatch2[1];
-            if(timeMatch3) departureTime += " " + timeMatch3[1]; // 如果有具體時間就接上去
+            if(timeMatch3) departureTime += " " + timeMatch3[1]; 
         }
 
-        // --- 7. 抓取其他特殊資訊 (如體重、板型、房型) ---
         const weightMatch = rawText.match(/(\d{2,3}kg)/i);
         if (weightMatch) special += weightMatch[1] + " ";
         
@@ -202,15 +202,35 @@
         if (rawText.includes("雙板")) special += "雙板 ";
         if (rawText.includes("一大床")) special += "一大床 ";
 
-        // --- 填入表單 ---
         document.getElementById('mode').value = mode;
         if(customer) document.getElementById('customer').value = customer;
         document.getElementById('pax').value = pax;
         if(aud) document.getElementById('aud').value = aud;
         document.getElementById('note').value = note;
-        document.getElementById('departureTime').value = departureTime; // 填入獨立時間欄位
+        document.getElementById('departureTime').value = departureTime; 
         if(special) document.getElementById('specialInfo').value = special.trim();
     });
+
+    // --- 取消修改邏輯 ---
+    document.getElementById('cancelEditBtn').addEventListener('click', () => {
+        resetFormUI();
+    });
+
+    function resetFormUI() {
+        currentEditId = null;
+        document.getElementById('orderForm').reset();
+        document.getElementById('fxRate').value = '23'; 
+        document.getElementById('rawOrderText').value = '';
+        
+        // UI 恢復新增模式
+        document.getElementById('formTitle').innerText = "🆕 快速錄入新訂單";
+        document.getElementById('formTitle').classList.replace("text-orange-600", "text-slate-800");
+        document.getElementById('formSection').classList.remove("bg-orange-50", "border-orange-300");
+        document.getElementById('formSubmitBtn').innerText = "預覽並準備存檔";
+        document.getElementById('formSubmitBtn').classList.replace("bg-orange-600", "bg-emerald-600");
+        document.getElementById('formSubmitBtn').classList.replace("hover:bg-orange-700", "hover:bg-emerald-700");
+        document.getElementById('cancelEditBtn').classList.add("hidden");
+    }
 
     // --- 表單攔截與彈窗確認 ---
     let pendingData = {}; 
@@ -231,12 +251,13 @@
             aud: audVal,
             fx_rate: fxVal,
             twd: twdVal,
-            departure_time: document.getElementById('departureTime').value, // 新增到資料庫物件
+            departure_time: document.getElementById('departureTime').value, 
             note: document.getElementById('note').value,
             special_info: document.getElementById('specialInfo').value,
-            timestamp: new Date()
+            timestamp: currentEditId ? window.ordersDataMap[currentEditId].timestamp : new Date() // 修改時保留原時間
         };
 
+        document.getElementById('modalTitle').innerText = currentEditId ? "確認更新訂單資訊" : "確認訂單資訊";
         document.getElementById('modalMode').innerText = document.getElementById('mode').options[document.getElementById('mode').selectedIndex].text;
         document.getElementById('modalCustomer').innerText = pendingData.customer;
         document.getElementById('modalPax').innerText = pendingData.pax;
@@ -252,10 +273,10 @@
     document.getElementById('cancelBtn').addEventListener('click', () => modal.classList.add('hidden') );
 
     // ==========================================
-    // 第二部分：Firebase 連線與寫入 (動態載入)
+    // 第二部分：Firebase 連線與操作
     // ==========================================
     
-    // ⚠️ 請在這裡填寫您的 Firebase 金鑰！(只要填這裡就好)
+    // ⚠️ 請在這裡填寫您的 Firebase 金鑰！
     const firebaseConfig = {
         apiKey: "請填寫",
         authDomain: "請填寫",
@@ -266,50 +287,108 @@
     };
 
     let db;
+    let firestoreRef; 
 
     import("https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js").then(async (firebaseApp) => {
-        const firestore = await import("https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js");
-        
+        firestoreRef = await import("https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js");
         const app = firebaseApp.initializeApp(firebaseConfig);
-        db = firestore.getFirestore(app);
+        db = firestoreRef.getFirestore(app);
 
         document.getElementById('statusText').innerText = "資料庫連線成功 🟢";
         document.getElementById('statusText').classList.replace("text-slate-500", "text-emerald-600");
 
+        // --- 核心：寫入與更新 (加上 finally 確保防卡頓) ---
         document.getElementById('confirmSaveBtn').addEventListener('click', async () => {
-            document.getElementById('confirmSaveBtn').innerText = "儲存中...";
+            const btn = document.getElementById('confirmSaveBtn');
+            btn.innerText = "處理中...";
+            
             try {
-                await firestore.addDoc(firestore.collection(db, "orders"), pendingData);
-                modal.classList.add('hidden'); 
-                document.getElementById('confirmSaveBtn').innerText = "確認並存入";
-                document.getElementById('orderForm').reset(); 
-                document.getElementById('rawOrderText').value = '';
-                document.getElementById('fxRate').value = '23'; 
+                if (currentEditId) {
+                    // 執行修改
+                    const docRef = firestoreRef.doc(db, "orders", currentEditId);
+                    await firestoreRef.updateDoc(docRef, pendingData);
+                } else {
+                    // 執行新增
+                    await firestoreRef.addDoc(firestoreRef.collection(db, "orders"), pendingData);
+                }
             } catch (error) {
                 console.error(error);
-                alert("寫入資料庫失敗，請檢查金鑰設定或權限規則。");
-                document.getElementById('confirmSaveBtn').innerText = "確認並存入";
+                alert("資料庫操作失敗，請檢查權限或連線。");
+            } finally {
+                // 無論成功或失敗，強制關閉彈窗並重置介面
+                modal.classList.add('hidden'); 
+                btn.innerText = "確認並存入";
+                resetFormUI();
             }
         });
 
-        // 即時渲染清單
-        const q = firestore.query(firestore.collection(db, "orders"), firestore.orderBy("timestamp", "desc"));
-        firestore.onSnapshot(q, (snapshot) => {
+        // --- 全局函數：提供給 HTML 按鈕呼叫的 刪除 與 修改 ---
+        window.deleteOrder = async (id) => {
+            if (confirm('確定要刪除這筆資料嗎？此動作無法復原。')) {
+                try {
+                    await firestoreRef.deleteDoc(firestoreRef.doc(db, "orders", id));
+                } catch (e) {
+                    alert("刪除失敗");
+                    console.error(e);
+                }
+            }
+        };
+
+        window.editOrder = (id) => {
+            currentEditId = id;
+            const data = window.ordersDataMap[id];
+            
+            // 填入表單
+            document.getElementById('mode').value = data.mode;
+            document.getElementById('customer').value = data.customer || '';
+            document.getElementById('pax').value = data.pax || 1;
+            document.getElementById('aud').value = data.aud || '';
+            document.getElementById('fxRate').value = data.fx_rate || 23;
+            document.getElementById('departureTime').value = data.departure_time || '';
+            document.getElementById('note').value = data.note || '';
+            document.getElementById('specialInfo').value = data.special_info || '';
+
+            // 改變 UI 狀態
+            document.getElementById('formTitle').innerText = "✏️ 修改訂單模式";
+            document.getElementById('formTitle').classList.replace("text-slate-800", "text-orange-600");
+            document.getElementById('formSection').classList.add("bg-orange-50", "border-orange-300");
+            document.getElementById('formSubmitBtn').innerText = "預覽並準備更新";
+            document.getElementById('formSubmitBtn').classList.replace("bg-emerald-600", "bg-orange-600");
+            document.getElementById('formSubmitBtn').classList.replace("hover:bg-emerald-700", "hover:bg-orange-700");
+            document.getElementById('cancelEditBtn').classList.remove("hidden");
+            
+            // 滾動回頂部讓使用者看見表單
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        };
+
+        // --- 即時渲染清單 ---
+        const q = firestoreRef.query(firestoreRef.collection(db, "orders"), firestoreRef.orderBy("timestamp", "desc"));
+        firestoreRef.onSnapshot(q, (snapshot) => {
             const listA = document.getElementById('list-mode-a');
             const listB = document.getElementById('list-mode-b');
             const listC = document.getElementById('list-mode-c');
             listA.innerHTML = ''; listB.innerHTML = ''; listC.innerHTML = '';
+            
+            window.ordersDataMap = {}; // 清空暫存
 
             snapshot.forEach((doc) => {
                 const data = doc.data();
+                window.ordersDataMap[doc.id] = data; // 將資料存入全局物件供修改時讀取
+
                 const paxDisplay = data.pax ? `<span class="bg-blue-100 text-blue-800 text-xs px-2 py-0.5 rounded ml-2">👤 ${data.pax}人</span>` : '';
                 const timeDisplay = data.departure_time ? `<p class="text-sm font-bold text-orange-600 mt-2">⏰ 出發：${data.departure_time}</p>` : '';
                 
                 const cardHTML = `
-                    <div class="p-3 bg-slate-50 rounded-lg border border-slate-100 hover:shadow-md transition relative">
-                        <p class="font-bold text-sm text-slate-800">${data.customer} ${paxDisplay}</p>
+                    <div class="order-card p-3 bg-slate-50 rounded-lg border border-slate-100 hover:shadow-md transition relative">
+                        <!-- 懸浮操作按鈕 -->
+                        <div class="action-btns absolute top-2 right-2 bg-white/90 p-1 rounded shadow-sm flex space-x-2 z-10 border border-slate-200">
+                            <button onclick="editOrder('${doc.id}')" title="修改" class="text-blue-600 hover:text-blue-800 px-1 text-sm">✏️ 修改</button>
+                            <button onclick="deleteOrder('${doc.id}')" title="刪除" class="text-red-600 hover:text-red-800 px-1 text-sm">🗑️ 刪除</button>
+                        </div>
+                        
+                        <p class="font-bold text-sm text-slate-800 pr-16">${data.customer} ${paxDisplay}</p>
                         ${timeDisplay}
-                        <p class="text-xs text-slate-500 mt-1 break-words whitespace-pre-wrap">${data.note}</p>
+                        <p class="text-xs text-slate-500 mt-1 break-words whitespace-pre-wrap pr-2">${data.note}</p>
                         <p class="text-xs text-red-500 mt-1">${data.special_info}</p>
                         <div class="flex justify-between items-end mt-2 border-t border-slate-200 pt-2">
                             <span class="text-xs text-slate-400">匯率 ${data.fx_rate} </span>
