@@ -10,7 +10,7 @@
         body { font-family: 'Noto Sans TC', sans-serif; background-color: #f8fafc; }
         .card-shadow { box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); }
         .no-scrollbar::-webkit-scrollbar { display: none; }
-        /* 讓卡片在 hover 時顯示按鈕 */
+        /* 讓卡片在滑鼠移過去時才顯示編輯按鈕 */
         .order-card .action-btns { opacity: 0; transition: opacity 0.2s; }
         .order-card:hover .action-btns { opacity: 1; }
     </style>
@@ -118,19 +118,50 @@
                 <p><strong>特殊資訊：</strong> <span id="modalSpecial" class="text-red-500 font-bold"></span></p>
             </div>
             <div class="mt-8 flex justify-end space-x-3">
-                <button type="button" id="cancelBtn" class="px-5 py-2 border border-slate-300 rounded-lg text-slate-600 hover:bg-slate-50">返回</button>
+                <button type="button" id="cancelBtn" class="px-5 py-2 border border-slate-300 rounded-lg text-slate-600 hover:bg-slate-50">返回修改</button>
                 <button type="button" id="confirmSaveBtn" class="px-5 py-2 bg-blue-600 text-white rounded-lg font-bold hover:bg-blue-700">確認並存入</button>
             </div>
         </div>
     </div>
 
 <script type="module">
-    // 全局變數設計
+    // 全域變數設計
     let currentEditId = null; 
-    window.ordersDataMap = {}; // 暫存畫面上所有的訂單資料供修改時讀取
+    window.ordersDataMap = {}; 
 
     // ==========================================
-    // 第一部分：UI 與文字解析邏輯
+    // UI 重置函式 (防呆與防當機)
+    // ==========================================
+    window.resetFormUI = () => {
+        currentEditId = null;
+        document.getElementById('orderForm').reset();
+        document.getElementById('fxRate').value = '23'; 
+        document.getElementById('rawOrderText').value = '';
+        
+        // 恢復「新增模式」外觀
+        const formTitle = document.getElementById('formTitle');
+        formTitle.innerText = "🆕 快速錄入新訂單";
+        formTitle.classList.remove("text-orange-600");
+        formTitle.classList.add("text-slate-800");
+
+        const formSection = document.getElementById('formSection');
+        formSection.classList.remove("bg-orange-50", "border-orange-300");
+
+        const formSubmitBtn = document.getElementById('formSubmitBtn');
+        formSubmitBtn.innerText = "預覽並準備存檔";
+        formSubmitBtn.classList.remove("bg-orange-600", "hover:bg-orange-700");
+        formSubmitBtn.classList.add("bg-emerald-600", "hover:bg-emerald-700");
+
+        document.getElementById('cancelEditBtn').classList.add("hidden");
+    };
+
+    // --- 取消修改按鈕 ---
+    document.getElementById('cancelEditBtn').addEventListener('click', () => {
+        window.resetFormUI();
+    });
+
+    // ==========================================
+    // 解析與攔截邏輯
     // ==========================================
     document.getElementById('parseBtn').addEventListener('click', () => {
         const rawText = document.getElementById('rawOrderText').value;
@@ -211,28 +242,6 @@
         if(special) document.getElementById('specialInfo').value = special.trim();
     });
 
-    // --- 取消修改邏輯 ---
-    document.getElementById('cancelEditBtn').addEventListener('click', () => {
-        resetFormUI();
-    });
-
-    function resetFormUI() {
-        currentEditId = null;
-        document.getElementById('orderForm').reset();
-        document.getElementById('fxRate').value = '23'; 
-        document.getElementById('rawOrderText').value = '';
-        
-        // UI 恢復新增模式
-        document.getElementById('formTitle').innerText = "🆕 快速錄入新訂單";
-        document.getElementById('formTitle').classList.replace("text-orange-600", "text-slate-800");
-        document.getElementById('formSection').classList.remove("bg-orange-50", "border-orange-300");
-        document.getElementById('formSubmitBtn').innerText = "預覽並準備存檔";
-        document.getElementById('formSubmitBtn').classList.replace("bg-orange-600", "bg-emerald-600");
-        document.getElementById('formSubmitBtn').classList.replace("hover:bg-orange-700", "hover:bg-emerald-700");
-        document.getElementById('cancelEditBtn').classList.add("hidden");
-    }
-
-    // --- 表單攔截與彈窗確認 ---
     let pendingData = {}; 
     const modal = document.getElementById('confirmModal');
 
@@ -240,9 +249,9 @@
         e.preventDefault(); 
         const modeVal = document.getElementById('mode').value;
         const paxVal = parseInt(document.getElementById('pax').value) || 1;
-        const audVal = parseFloat(document.getElementById('aud').value);
-        const fxVal = parseFloat(document.getElementById('fxRate').value);
-        const twdVal = Math.round(audVal * fxVal);
+        const audVal = parseFloat(document.getElementById('aud').value) || 0;
+        const fxVal = parseFloat(document.getElementById('fxRate').value) || 23;
+        const twdVal = Math.round(audVal * fxVal) || 0;
 
         pendingData = {
             mode: modeVal,
@@ -254,7 +263,7 @@
             departure_time: document.getElementById('departureTime').value, 
             note: document.getElementById('note').value,
             special_info: document.getElementById('specialInfo').value,
-            timestamp: currentEditId ? window.ordersDataMap[currentEditId].timestamp : new Date() // 修改時保留原時間
+            timestamp: currentEditId ? window.ordersDataMap[currentEditId].timestamp : new Date() 
         };
 
         document.getElementById('modalTitle').innerText = currentEditId ? "確認更新訂單資訊" : "確認訂單資訊";
@@ -273,7 +282,7 @@
     document.getElementById('cancelBtn').addEventListener('click', () => modal.classList.add('hidden') );
 
     // ==========================================
-    // 第二部分：Firebase 連線與操作
+    // 第二部分：Firebase 樂觀寫入
     // ==========================================
     
     // ⚠️ 請在這裡填寫您的 Firebase 金鑰！
@@ -297,40 +306,34 @@
         document.getElementById('statusText').innerText = "資料庫連線成功 🟢";
         document.getElementById('statusText').classList.replace("text-slate-500", "text-emerald-600");
 
-        // --- 核心：寫入與更新 (加上 finally 確保防卡頓) ---
-        document.getElementById('confirmSaveBtn').addEventListener('click', async () => {
+        // --- 優化：移除 await 的「樂觀寫入」，絕對不會卡死！ ---
+        document.getElementById('confirmSaveBtn').addEventListener('click', () => {
             const btn = document.getElementById('confirmSaveBtn');
-            btn.innerText = "處理中...";
+            if(btn.disabled) return; 
+            btn.disabled = true;
+            btn.innerText = "寫入中...";
             
             try {
                 if (currentEditId) {
-                    // 執行修改
                     const docRef = firestoreRef.doc(db, "orders", currentEditId);
-                    await firestoreRef.updateDoc(docRef, pendingData);
+                    // 放生執行：不需要 await 等待回傳
+                    firestoreRef.updateDoc(docRef, pendingData).catch(e => console.error("Update Error:", e));
                 } else {
-                    // 執行新增
-                    await firestoreRef.addDoc(firestoreRef.collection(db, "orders"), pendingData);
+                    firestoreRef.addDoc(firestoreRef.collection(db, "orders"), pendingData).catch(e => console.error("Add Error:", e));
                 }
-            } catch (error) {
-                console.error(error);
-                alert("資料庫操作失敗，請檢查權限或連線。");
             } finally {
-                // 無論成功或失敗，強制關閉彈窗並重置介面
+                // 不管 Firebase 怎麼跑，瞬間關閉彈窗、立刻清空表單！
                 modal.classList.add('hidden'); 
                 btn.innerText = "確認並存入";
-                resetFormUI();
+                btn.disabled = false;
+                window.resetFormUI();
             }
         });
 
-        // --- 全局函數：提供給 HTML 按鈕呼叫的 刪除 與 修改 ---
-        window.deleteOrder = async (id) => {
+        // --- 新增：刪除與修改功能 ---
+        window.deleteOrder = (id) => {
             if (confirm('確定要刪除這筆資料嗎？此動作無法復原。')) {
-                try {
-                    await firestoreRef.deleteDoc(firestoreRef.doc(db, "orders", id));
-                } catch (e) {
-                    alert("刪除失敗");
-                    console.error(e);
-                }
+                firestoreRef.deleteDoc(firestoreRef.doc(db, "orders", id)).catch(e => alert("刪除失敗"));
             }
         };
 
@@ -338,7 +341,7 @@
             currentEditId = id;
             const data = window.ordersDataMap[id];
             
-            // 填入表單
+            // 將資料填回表單
             document.getElementById('mode').value = data.mode;
             document.getElementById('customer').value = data.customer || '';
             document.getElementById('pax').value = data.pax || 1;
@@ -348,42 +351,44 @@
             document.getElementById('note').value = data.note || '';
             document.getElementById('specialInfo').value = data.special_info || '';
 
-            // 改變 UI 狀態
-            document.getElementById('formTitle').innerText = "✏️ 修改訂單模式";
-            document.getElementById('formTitle').classList.replace("text-slate-800", "text-orange-600");
+            // 改變 UI 狀態，提醒現在是「修改模式」
+            const formTitle = document.getElementById('formTitle');
+            formTitle.innerText = "✏️ 修改訂單模式";
+            formTitle.classList.remove("text-slate-800");
+            formTitle.classList.add("text-orange-600");
+            
             document.getElementById('formSection').classList.add("bg-orange-50", "border-orange-300");
-            document.getElementById('formSubmitBtn').innerText = "預覽並準備更新";
-            document.getElementById('formSubmitBtn').classList.replace("bg-emerald-600", "bg-orange-600");
-            document.getElementById('formSubmitBtn').classList.replace("hover:bg-emerald-700", "hover:bg-orange-700");
+            
+            const formSubmitBtn = document.getElementById('formSubmitBtn');
+            formSubmitBtn.innerText = "預覽並準備更新";
+            formSubmitBtn.classList.remove("bg-emerald-600", "hover:bg-emerald-700");
+            formSubmitBtn.classList.add("bg-orange-600", "hover:bg-orange-700");
+            
             document.getElementById('cancelEditBtn').classList.remove("hidden");
             
-            // 滾動回頂部讓使用者看見表單
+            // 自動往上捲動，讓您看見表單
             window.scrollTo({ top: 0, behavior: 'smooth' });
         };
 
         // --- 即時渲染清單 ---
         const q = firestoreRef.query(firestoreRef.collection(db, "orders"), firestoreRef.orderBy("timestamp", "desc"));
         firestoreRef.onSnapshot(q, (snapshot) => {
-            const listA = document.getElementById('list-mode-a');
-            const listB = document.getElementById('list-mode-b');
-            const listC = document.getElementById('list-mode-c');
-            listA.innerHTML = ''; listB.innerHTML = ''; listC.innerHTML = '';
-            
-            window.ordersDataMap = {}; // 清空暫存
+            let htmlA = '', htmlB = '', htmlC = '';
+            window.ordersDataMap = {}; // 重新整理快取
 
             snapshot.forEach((doc) => {
                 const data = doc.data();
-                window.ordersDataMap[doc.id] = data; // 將資料存入全局物件供修改時讀取
+                window.ordersDataMap[doc.id] = data; // 存入字典供修改時使用
 
                 const paxDisplay = data.pax ? `<span class="bg-blue-100 text-blue-800 text-xs px-2 py-0.5 rounded ml-2">👤 ${data.pax}人</span>` : '';
                 const timeDisplay = data.departure_time ? `<p class="text-sm font-bold text-orange-600 mt-2">⏰ 出發：${data.departure_time}</p>` : '';
                 
+                // 加入了懸浮的 修改/刪除 按鈕
                 const cardHTML = `
                     <div class="order-card p-3 bg-slate-50 rounded-lg border border-slate-100 hover:shadow-md transition relative">
-                        <!-- 懸浮操作按鈕 -->
                         <div class="action-btns absolute top-2 right-2 bg-white/90 p-1 rounded shadow-sm flex space-x-2 z-10 border border-slate-200">
-                            <button onclick="editOrder('${doc.id}')" title="修改" class="text-blue-600 hover:text-blue-800 px-1 text-sm">✏️ 修改</button>
-                            <button onclick="deleteOrder('${doc.id}')" title="刪除" class="text-red-600 hover:text-red-800 px-1 text-sm">🗑️ 刪除</button>
+                            <button onclick="editOrder('${doc.id}')" title="修改" class="text-blue-600 hover:text-blue-800 px-1 text-sm font-bold">✏️ 修改</button>
+                            <button onclick="deleteOrder('${doc.id}')" title="刪除" class="text-red-600 hover:text-red-800 px-1 text-sm font-bold">🗑️ 刪除</button>
                         </div>
                         
                         <p class="font-bold text-sm text-slate-800 pr-16">${data.customer} ${paxDisplay}</p>
@@ -399,10 +404,14 @@
                         </div>
                     </div>
                 `;
-                if (data.mode === 'Mode_A') listA.innerHTML += cardHTML;
-                if (data.mode === 'Mode_B') listB.innerHTML += cardHTML;
-                if (data.mode === 'Mode_C') listC.innerHTML += cardHTML;
+                if (data.mode === 'Mode_A') htmlA += cardHTML;
+                if (data.mode === 'Mode_B') htmlB += cardHTML;
+                if (data.mode === 'Mode_C') htmlC += cardHTML;
             });
+
+            document.getElementById('list-mode-a').innerHTML = htmlA;
+            document.getElementById('list-mode-b').innerHTML = htmlB;
+            document.getElementById('list-mode-c').innerHTML = htmlC;
         });
 
     }).catch(err => {
