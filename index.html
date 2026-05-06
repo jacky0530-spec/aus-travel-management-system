@@ -6,7 +6,6 @@
     <title>澳洲旅遊調度與發票管理系統</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;700&display=swap" rel="stylesheet">
-    <!-- 引入 html2canvas 用於匯出報表圖片 -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <style>
         body { font-family: 'Noto Sans TC', sans-serif; background-color: #f1f5f9; }
@@ -16,7 +15,6 @@
         .order-card:hover .action-btns { opacity: 1; }
         .nav-btn.active { border-bottom: 4px solid #2563eb; color: #1e40af; font-weight: bold; background-color: #eff6ff; }
         
-        /* 列印專屬樣式設定 */
         @media print {
             .no-print { display: none !important; }
             body { background-color: white; padding: 0; }
@@ -55,10 +53,11 @@
             </div>
         </section>
 
+        <!-- 表單區塊 -->
         <section class="mb-8 bg-white p-5 rounded-xl border border-slate-200 card-shadow transition-colors duration-300" id="formSection">
             <h2 id="formTitle" class="text-lg font-bold text-slate-800 mb-3">🆕 快速錄入新訂單</h2>
-            <form id="orderForm" class="grid grid-cols-1 md:grid-cols-6 gap-3">
-                <div class="md:col-span-1">
+            <form id="orderForm" class="grid grid-cols-1 md:grid-cols-8 gap-3">
+                <div class="md:col-span-2">
                     <label class="block text-xs font-medium text-slate-700">經營模式</label>
                     <select id="mode" class="mt-1 block w-full p-2 border border-slate-300 rounded-md bg-slate-50 text-sm" required>
                         <option value="Mode_A">Mode A: 自營自出</option>
@@ -66,36 +65,42 @@
                         <option value="Mode_C">Mode C: 同業轉入</option>
                     </select>
                 </div>
-                <div class="md:col-span-1">
+                <div class="md:col-span-3">
                     <label class="block text-xs font-medium text-slate-700">旅客姓名/單號</label>
                     <input type="text" id="customer" class="mt-1 block w-full p-2 border border-slate-300 rounded-md text-sm" required>
                 </div>
-                <div class="md:col-span-1">
+                <div class="md:col-span-3">
+                    <label class="block text-xs font-medium text-slate-700">出發時間</label>
+                    <input type="text" id="departureTime" placeholder="如 05-04 09:30" class="mt-1 block w-full p-2 border border-slate-300 rounded-md bg-yellow-50 focus:bg-white text-sm">
+                </div>
+                
+                <div class="md:col-span-2">
+                    <label class="block text-xs font-medium text-slate-700">單價 (AUD)</label>
+                    <input type="number" step="0.01" id="unitPrice" placeholder="有單價會自動乘" class="mt-1 block w-full p-2 border border-slate-300 rounded-md text-sm">
+                </div>
+                <div class="md:col-span-2">
                     <label class="block text-xs font-medium text-slate-700">人數 (Pax)</label>
                     <input type="number" id="pax" value="1" min="1" class="mt-1 block w-full p-2 border border-slate-300 rounded-md text-sm" required>
                 </div>
-                <div class="md:col-span-1">
+                <div class="md:col-span-2">
                     <label class="block text-xs font-medium text-slate-700">總額 (AUD)</label>
-                    <input type="number" step="0.01" id="aud" class="mt-1 block w-full p-2 border border-slate-300 rounded-md text-sm" required>
+                    <input type="number" step="0.01" id="aud" class="mt-1 block w-full p-2 border border-blue-400 bg-blue-50 font-bold rounded-md text-sm" required>
                 </div>
-                <div class="md:col-span-1">
+                <div class="md:col-span-2">
                     <label class="block text-xs font-medium text-slate-700">匯率</label>
                     <input type="number" step="0.01" id="fxRate" value="23" class="mt-1 block w-full p-2 border border-slate-300 rounded-md text-sm" required>
                 </div>
-                <div class="md:col-span-1">
-                    <label class="block text-xs font-medium text-slate-700">出發時間</label>
-                    <input type="text" id="departureTime" placeholder="如 2026-05-04 09:30" class="mt-1 block w-full p-2 border border-slate-300 rounded-md bg-yellow-50 focus:bg-white text-sm">
-                </div>
-                <div class="md:col-span-4">
+
+                <div class="md:col-span-5">
                     <label class="block text-xs font-medium text-slate-700">行程詳情 / 備註 (包含金流)</label>
                     <textarea id="note" rows="2" class="mt-1 block w-full p-2 border border-slate-300 rounded-md text-sm"></textarea>
                 </div>
-                <div class="md:col-span-2">
+                <div class="md:col-span-3">
                     <label class="block text-xs font-medium text-slate-700">特殊資訊 (體重/裝備/房型等)</label>
                     <input type="text" id="specialInfo" class="mt-1 block w-full p-2 border border-slate-300 rounded-md text-sm">
                 </div>
                 
-                <div class="md:col-span-6 flex justify-end mt-1 space-x-3">
+                <div class="md:col-span-8 flex justify-end mt-1 space-x-3">
                     <button type="button" id="cancelEditBtn" class="hidden px-5 py-2 border border-slate-300 rounded-lg text-slate-600 hover:bg-slate-50 text-sm">取消修改</button>
                     <button type="submit" id="formSubmitBtn" class="bg-emerald-600 text-white px-6 py-2 rounded-lg font-bold hover:bg-emerald-700 transition text-sm">預覽並準備存檔</button>
                 </div>
@@ -104,7 +109,6 @@
     </div>
 
     <!-- ================= 視圖切換區 ================= -->
-    
     <main id="view-dashboard" class="view-section grid grid-cols-1 lg:grid-cols-3 gap-6 no-print">
         <section class="bg-white rounded-xl border border-emerald-200 overflow-hidden shadow-sm">
             <div class="bg-emerald-50 p-3 border-b border-emerald-100"><h3 class="font-bold text-emerald-800">📦 自營接單 (A)</h3></div>
@@ -129,19 +133,14 @@
         </section>
     </main>
 
-    <!-- 視圖 3：報表查詢網頁 (截圖與列印的主體) -->
     <main id="view-report" class="view-section hidden">
-        
-        <!-- 報表控制台 (列印時隱藏) -->
         <div class="flex flex-wrap gap-3 mb-4 items-center bg-white p-4 rounded-xl border border-slate-200 shadow-sm no-print">
             <h3 class="font-bold text-slate-800 mr-4">⚙️ 報表設定</h3>
-            
             <select id="reportTimeType" class="p-2 border border-slate-300 rounded text-sm bg-slate-50" onchange="toggleDateInputs(); renderUI()">
                 <option value="all">顯示全部出發時間</option>
                 <option value="month">📅 出發月報表</option>
                 <option value="day">📆 出發日報表</option>
             </select>
-            
             <input type="month" id="monthPicker" class="hidden p-2 border border-slate-300 rounded text-sm" onchange="renderUI()">
             <input type="date" id="datePicker" class="hidden p-2 border border-slate-300 rounded text-sm" onchange="renderUI()">
             
@@ -150,16 +149,13 @@
                 <option value="pending">⏳ 只顯示未完成</option>
                 <option value="completed">✅ 只顯示已完成</option>
             </select>
-
             <button onclick="window.print()" class="px-4 py-2 border border-slate-800 text-slate-800 font-bold rounded hover:bg-slate-100 text-sm transition">🖨️ 列印</button>
             <button onclick="exportToImage()" class="px-4 py-2 bg-blue-600 text-white font-bold rounded hover:bg-blue-700 text-sm transition">📸 下載圖片</button>
         </div>
 
-        <!-- 報表主體 (截圖範圍) -->
         <div id="report-container" class="bg-white rounded-xl overflow-hidden p-2">
             <h2 id="reportHeaderTitle" class="text-2xl font-bold text-center text-slate-800 py-4 hidden print:block">澳洲旅遊業務出發報表</h2>
             
-            <!-- 報表狀態看板 -->
             <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
                 <div class="bg-slate-50 p-5 rounded-xl border border-slate-200 border-l-4 border-l-blue-500">
                     <p class="text-sm text-slate-500 mb-1">符合出發條件訂單數</p>
@@ -175,7 +171,6 @@
                 </div>
             </div>
 
-            <!-- 報表列表 -->
             <div class="border border-slate-200 rounded-lg overflow-x-auto">
                 <table class="w-full text-left border-collapse text-sm">
                     <thead>
@@ -184,12 +179,11 @@
                             <th class="p-3">模式</th>
                             <th class="p-3">姓名/單號</th>
                             <th class="p-3">出發時間</th>
-                            <th class="p-3 text-right">金額</th>
+                            <th class="p-3 text-right">金額明細</th>
                             <th class="p-3 text-center no-print">操作</th>
                         </tr>
                     </thead>
                     <tbody id="report-table-body" class="divide-y divide-slate-200 bg-white">
-                        <!-- 表格資料由 JS 產生 -->
                     </tbody>
                 </table>
             </div>
@@ -203,7 +197,7 @@
             <div class="space-y-2 text-slate-700 text-sm">
                 <p><strong>模式：</strong> <span id="modalMode" class="text-blue-600"></span></p>
                 <p><strong>姓名/單號：</strong> <span id="modalCustomer"></span></p>
-                <p><strong>人數：</strong> <span id="modalPax" class="font-bold text-blue-600"></span> 人</p>
+                <p><strong>單價與人數：</strong> <span id="modalUnitPax" class="font-bold text-blue-600"></span></p>
                 <p><strong>出發時間：</strong> ⏰ <span id="modalDeparture" class="font-bold text-orange-600"></span></p>
                 <p><strong>澳幣總額：</strong> A$ <span id="modalAud" class="font-bold text-lg"></span></p>
                 <p><strong>折合台幣：</strong> NT$ <span id="modalTwd" class="font-bold text-emerald-600 text-lg"></span></p>
@@ -219,6 +213,17 @@
 <script type="module">
     window.currentTab = 'dashboard';
     window.allOrders = []; 
+
+    // --- 單價與人數：自動連動計算邏輯 ---
+    const calculateTotal = () => {
+        const unit = parseFloat(document.getElementById('unitPrice').value);
+        const pax = parseInt(document.getElementById('pax').value) || 1;
+        if (!isNaN(unit)) {
+            document.getElementById('aud').value = (unit * pax).toFixed(2);
+        }
+    };
+    document.getElementById('unitPrice').addEventListener('input', calculateTotal);
+    document.getElementById('pax').addEventListener('input', calculateTotal);
 
     window.switchTab = (tabName) => {
         window.currentTab = tabName;
@@ -250,11 +255,9 @@
         const type = document.getElementById('reportTimeType').value;
         const mp = document.getElementById('monthPicker');
         const dp = document.getElementById('datePicker');
-        
         mp.classList.toggle('hidden', type !== 'month');
         dp.classList.toggle('hidden', type !== 'day');
         
-        // 自動填入當前時間供快速查詢
         const today = new Date();
         const yyyy = today.getFullYear();
         const mm = String(today.getMonth() + 1).padStart(2, '0');
@@ -263,7 +266,6 @@
         if(type === 'month' && !mp.value) mp.value = `${yyyy}-${mm}`;
         if(type === 'day' && !dp.value) dp.value = `${yyyy}-${mm}-${dd}`;
         
-        // 更新列印大標題
         const header = document.getElementById('reportHeaderTitle');
         if(type === 'all') header.innerText = "澳洲旅遊業務報表 (全部出發時間)";
         else if (type === 'month') header.innerText = `澳洲旅遊業務出發月報表 (${mp.value})`;
@@ -273,7 +275,6 @@
     window.exportToImage = () => {
         const container = document.getElementById('report-container');
         document.getElementById('reportHeaderTitle').classList.remove('hidden'); 
-        
         const noPrintElements = container.querySelectorAll('.no-print');
         noPrintElements.forEach(el => el.style.display = 'none');
 
@@ -283,7 +284,6 @@
             link.download = `旅遊財務出發報表_${dateStr}.png`;
             link.href = canvas.toDataURL('image/png');
             link.click();
-            
             document.getElementById('reportHeaderTitle').classList.add('hidden');
             noPrintElements.forEach(el => el.style.display = '');
         });
@@ -313,7 +313,7 @@
         if(!rawText) return alert("請先貼上文字");
 
         let mode = document.getElementById('mode').value; 
-        let customer = ''; let aud = ''; let special = ''; let pax = 1; let note = ''; let departureTime = ''; 
+        let customer = ''; let aud = ''; let special = ''; let pax = 1; let note = ''; let departureTime = ''; let unitPrice = '';
         
         const upperText = rawText.toUpperCase();
         if (upperText.includes("FLIGGY") || upperText.includes("LITTLE FOX")) mode = 'Mode_B'; 
@@ -337,11 +337,17 @@
 
         note = notesArr.length > 0 ? notesArr.join("\n") : "自動解析匯入";
 
-        const paxMatch = rawText.match(/×\s*(\d+)/) || rawText.match(/(\d+)\s*位/) || rawText.match(/人數[：:]\s*(\d+)/);
-        if (paxMatch) pax = paxMatch[1]; else if (rawText.includes("5大4小")) pax = 9;
-
-        const totalMatch = rawText.match(/(?:費用|共計|總計)[^\d]*([0-9.]+)/) || rawText.match(/=([0-9.]+)澳/) || rawText.match(/(?:A\$|\$)\s*([0-9.]+)/);
-        if (totalMatch) aud = totalMatch[1];
+        const unitPaxMatch = rawText.match(/(?:A\$|\$)\s*([0-9.]+)\s*[xX×*]\s*(\d+)/);
+        if (unitPaxMatch) {
+            unitPrice = unitPaxMatch[1];
+            pax = unitPaxMatch[2];
+            aud = (parseFloat(unitPrice) * parseInt(pax)).toFixed(2);
+        } else {
+            const paxMatch = rawText.match(/(\d+)\s*位/) || rawText.match(/人數[：:]\s*(\d+)/);
+            if (paxMatch) pax = paxMatch[1]; else if (rawText.includes("5大4小")) pax = 9;
+            const totalMatch = rawText.match(/(?:費用|共計|總計)[^\d]*([0-9.]+)/) || rawText.match(/=([0-9.]+)澳/) || rawText.match(/(?:A\$|\$)\s*([0-9.]+)/);
+            if (totalMatch) aud = totalMatch[1];
+        }
 
         const timeMatch1 = rawText.match(/出發時間[^\d]*([^\n]+)/); 
         const timeMatch2 = rawText.match(/(\d{1,2}月\d{1,2}號)/); 
@@ -354,6 +360,7 @@
         document.getElementById('mode').value = mode;
         if(customer) document.getElementById('customer').value = customer;
         document.getElementById('pax').value = pax;
+        document.getElementById('unitPrice').value = unitPrice; 
         if(aud) document.getElementById('aud').value = aud;
         document.getElementById('note').value = note;
         document.getElementById('departureTime').value = departureTime; 
@@ -367,28 +374,35 @@
         e.preventDefault(); 
         const modeVal = document.getElementById('mode').value;
         const paxVal = parseInt(document.getElementById('pax').value) || 1;
+        const unitVal = parseFloat(document.getElementById('unitPrice').value) || null;
         const audVal = parseFloat(document.getElementById('aud').value) || 0;
         const fxVal = parseFloat(document.getElementById('fxRate').value) || 23;
         const twdVal = Math.round(audVal * fxVal) || 0;
+
+        // 核心修復：正確從 allOrders 中抓取現有訂單的 status 與 timestamp
+        const existingOrder = window.currentEditId ? window.allOrders.find(o => o.id === window.currentEditId) : null;
+        const currentStatus = existingOrder ? existingOrder.data.status : "pending";
+        const currentTimestamp = existingOrder ? existingOrder.data.timestamp : new Date();
 
         pendingData = {
             mode: modeVal,
             customer: document.getElementById('customer').value,
             pax: paxVal, 
+            unit_price: unitVal, 
             aud: audVal,
             fx_rate: fxVal,
             twd: twdVal,
             departure_time: document.getElementById('departureTime').value, 
             note: document.getElementById('note').value,
             special_info: document.getElementById('specialInfo').value,
-            status: window.currentEditId ? window.allOrders.find(o=>o.id === window.currentEditId).status : "pending",
-            timestamp: window.currentEditId ? window.allOrders.find(o=>o.id === window.currentEditId).timestamp : new Date() 
+            status: currentStatus,
+            timestamp: currentTimestamp 
         };
 
         document.getElementById('modalTitle').innerText = window.currentEditId ? "確認更新訂單" : "確認新增訂單";
         document.getElementById('modalMode').innerText = document.getElementById('mode').options[document.getElementById('mode').selectedIndex].text;
         document.getElementById('modalCustomer').innerText = pendingData.customer;
-        document.getElementById('modalPax').innerText = pendingData.pax;
+        document.getElementById('modalUnitPax').innerText = unitVal ? `單價 A$ ${unitVal} × ${paxVal} 人` : `${paxVal} 人`;
         document.getElementById('modalAud').innerText = pendingData.aud;
         document.getElementById('modalTwd').innerText = pendingData.twd.toLocaleString();
         document.getElementById('modalDeparture').innerText = pendingData.departure_time || '未指定';
@@ -423,6 +437,9 @@ const firebaseConfig = {
         const paxDisplay = data.pax ? `<span class="bg-blue-100 text-blue-800 text-xs px-2 py-0.5 rounded">👤 ${data.pax}</span>` : '';
         const timeDisplay = data.departure_time ? `<p class="text-sm font-bold text-orange-600 mt-1">⏰ 出發：${data.departure_time}</p>` : '';
         
+        // 核心更新：卡片顯示單價算式
+        const unitDisplay = data.unit_price ? `<span class="text-[10px] font-bold text-blue-500 block leading-tight mb-1">A$ ${data.unit_price} × ${data.pax}</span>` : '';
+
         return `
             <div class="order-card p-4 bg-white rounded-lg border border-slate-200 hover:border-blue-300 transition shadow-sm relative group">
                 <div class="action-btns absolute top-2 right-2 bg-white/90 p-1 rounded shadow flex space-x-1 z-10 border border-slate-200">
@@ -438,6 +455,7 @@ const firebaseConfig = {
                 <div class="flex justify-between items-end mt-3 border-t border-slate-100 pt-2">
                     <span class="text-xs text-slate-400">匯率 ${data.fx_rate} </span>
                     <div class="text-right">
+                        ${unitDisplay}
                         <span class="font-bold text-slate-800 text-sm">A$ ${data.aud}</span>
                         <p class="text-xs text-slate-500 font-bold">NT$ ${data.twd.toLocaleString()}</p>
                     </div>
@@ -475,35 +493,21 @@ const firebaseConfig = {
                 document.getElementById('single-mode-list').innerHTML += cardHTML;
             }
 
-            // --- 報表頁面處理 (以出發時間過濾) ---
             if (window.currentTab === 'report') {
                 const passStatus = (reportStatus === 'all') || (data.status === reportStatus);
-                
-                // --- 核心：智慧出發時間比對邏輯 ---
                 let passTime = true;
                 if (reportTimeType !== 'all') {
                     const dep = data.departure_time || "";
-                    
                     if (reportTimeType === 'month' && targetMonth) {
-                        // targetMonth 為 "YYYY-MM" (如 "2026-05")
                         const mm = targetMonth.split('-')[1]; 
-                        const m = parseInt(mm, 10).toString(); // "5"
-                        // 支援 "2026-05-19" 或 "5月11號"
+                        const m = parseInt(mm, 10).toString(); 
                         passTime = dep.includes(targetMonth) || dep.includes(`-${mm}-`) || dep.includes(`${m}月`);
                     } 
                     else if (reportTimeType === 'day' && targetDate) {
-                        // targetDate 為 "YYYY-MM-DD" (如 "2026-05-11")
                         const parts = targetDate.split('-');
-                        const mm = parts[1];
-                        const dd = parts[2];
-                        const m = parseInt(mm, 10).toString();
-                        const d = parseInt(dd, 10).toString();
-                        // 支援 "2026-05-11", "05-11", "05/11", "5月11號", "5月11日"
-                        passTime = dep.includes(targetDate) || 
-                                   dep.includes(`${mm}-${dd}`) || 
-                                   dep.includes(`${mm}/${dd}`) || 
-                                   dep.includes(`${m}月${d}號`) || 
-                                   dep.includes(`${m}月${d}日`);
+                        const mm = parts[1]; const dd = parts[2];
+                        const m = parseInt(mm, 10).toString(); const d = parseInt(dd, 10).toString();
+                        passTime = dep.includes(targetDate) || dep.includes(`${mm}-${dd}`) || dep.includes(`${mm}/${dd}`) || dep.includes(`${m}月${d}號`) || dep.includes(`${m}月${d}日`);
                     }
                 }
 
@@ -519,6 +523,9 @@ const firebaseConfig = {
                     const cleanSpecial = data.special_info ? `\n\n⚠️ 特殊資訊：\n${data.special_info}`.replace(/"/g, '&quot;') : '';
                     const hoverText = `📝 行程與金流備註：\n------------------------\n${cleanNote}${cleanSpecial}`;
 
+                    // 核心更新：報表清單顯示單價算式
+                    const unitTableDisplay = data.unit_price ? `<br><span class="text-[10px] text-blue-500 font-bold block leading-tight mt-1">${data.unit_price} × ${data.pax}</span>` : '';
+
                     document.getElementById('report-table-body').innerHTML += `
                         <tr class="hover:bg-slate-50 border-b border-slate-200 transition cursor-help" title="${hoverText}">
                             <td class="p-3">${statusStr}</td>
@@ -532,7 +539,11 @@ const firebaseConfig = {
                                 </div>
                             </td>
                             <td class="p-3 text-orange-600 font-bold text-xs">${data.departure_time || '-'}</td>
-                            <td class="p-3 font-bold text-right">A$ ${data.aud} <br><span class="text-xs text-slate-500 font-normal">NT$ ${data.twd.toLocaleString()}</span></td>
+                            <td class="p-3 text-right">
+                                <span class="font-bold text-slate-800 text-sm">A$ ${data.aud}</span>
+                                ${unitTableDisplay}
+                                <p class="text-xs text-slate-500 font-normal mt-1">NT$ ${data.twd.toLocaleString()}</p>
+                            </td>
                             <td class="p-3 text-center no-print">
                                 <button onclick="editOrder('${doc.id}')" class="text-blue-600 hover:bg-blue-50 px-2 py-1 rounded text-xs mr-1 transition">修改</button>
                                 <button onclick="deleteOrder('${doc.id}')" class="text-red-600 hover:bg-red-50 px-2 py-1 rounded text-xs transition">刪除</button>
@@ -563,9 +574,9 @@ const firebaseConfig = {
             btn.disabled = true; btn.innerText = "寫入中...";
             try {
                 if (window.currentEditId) {
-                    firestoreRef.updateDoc(firestoreRef.doc(db, "orders", window.currentEditId), pendingData);
+                    firestoreRef.updateDoc(firestoreRef.doc(db, "orders", window.currentEditId), pendingData).catch(e => console.error(e));
                 } else {
-                    firestoreRef.addDoc(firestoreRef.collection(db, "orders"), pendingData);
+                    firestoreRef.addDoc(firestoreRef.collection(db, "orders"), pendingData).catch(e => console.error(e));
                 }
             } finally {
                 modal.classList.add('hidden'); 
@@ -591,6 +602,7 @@ const firebaseConfig = {
             
             document.getElementById('mode').value = data.mode;
             document.getElementById('customer').value = data.customer || '';
+            document.getElementById('unitPrice').value = data.unit_price || ''; 
             document.getElementById('pax').value = data.pax || 1;
             document.getElementById('aud').value = data.aud || '';
             document.getElementById('fxRate').value = data.fx_rate || 23;
