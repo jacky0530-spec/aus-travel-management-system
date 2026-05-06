@@ -132,7 +132,6 @@
     <main id="view-report" class="view-section hidden">
         <div class="flex flex-wrap gap-3 mb-4 items-center bg-white p-4 rounded-xl border border-slate-200 shadow-sm no-print">
             <h3 class="font-bold text-slate-800 mr-4">⚙️ 報表設定</h3>
-            <!-- 更新：選擇日期與選擇報表類型時都會觸發 updateReportHeader() 更新抬頭 -->
             <select id="reportTimeType" class="p-2 border border-slate-300 rounded text-sm bg-slate-50" onchange="toggleDateInputs(); updateReportHeader(); renderUI()">
                 <option value="all">顯示全部出發時間</option>
                 <option value="month">📅 出發月報表</option>
@@ -151,7 +150,6 @@
         </div>
 
         <div id="report-container" class="bg-white rounded-xl overflow-hidden p-2">
-            <!-- 報表大標題 -->
             <h2 id="reportHeaderTitle" class="text-2xl font-bold text-center text-slate-800 py-4 hidden print:block">澳洲旅遊業務出發報表 (全部出發時間)</h2>
             
             <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
@@ -188,6 +186,7 @@
         </div>
     </main>
 
+    <!-- 共用彈窗 -->
     <div id="confirmModal" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden flex items-center justify-center backdrop-blur-sm no-print">
         <div class="bg-white p-8 rounded-2xl shadow-2xl max-w-md w-full">
             <h2 class="text-xl font-bold text-slate-800 border-b pb-3 mb-4" id="modalTitle">確認訂單資訊</h2>
@@ -257,7 +256,6 @@
         window.renderUI(); 
     };
 
-    // --- 核心更新：根據選擇日期動態更新抬頭 ---
     window.updateReportHeader = () => {
         const type = document.getElementById('reportTimeType').value;
         const mp = document.getElementById('monthPicker').value;
@@ -298,7 +296,6 @@
         html2canvas(container, { scale: 2, backgroundColor: '#ffffff' }).then(canvas => {
             const link = document.createElement('a');
             
-            // --- 核心更新：將挑選的日期作為下載檔名 ---
             const type = document.getElementById('reportTimeType').value;
             let dateSuffix = '全部';
             if (type === 'month') dateSuffix = document.getElementById('monthPicker').value;
@@ -468,6 +465,7 @@ const firebaseConfig = {
   appId: "1:733398393106:web:370b0717ef760be29953cb",
   measurementId: "G-2CPJ8HH5PC"
 };
+
     let db;
     let firestoreRef; 
 
@@ -516,16 +514,19 @@ const firebaseConfig = {
         let reportCount = 0;
         let totalPending = 0;
         let totalCompleted = 0;
+        let reportRows = []; // 建立一個暫存陣列，用來將報表重新排序
         
         const reportStatus = document.getElementById('reportFilter') ? document.getElementById('reportFilter').value : 'all';
         const reportTimeType = document.getElementById('reportTimeType') ? document.getElementById('reportTimeType').value : 'all';
         const targetMonth = document.getElementById('monthPicker') ? document.getElementById('monthPicker').value : '';
         const targetDate = document.getElementById('datePicker') ? document.getElementById('datePicker').value : '';
 
+        // allOrders 已經在底層設定為下單時間 (timestamp) 從近到遠排列
         window.allOrders.forEach((doc) => {
             const data = doc.data;
             const cardHTML = generateCardHTML(doc);
 
+            // 卡片直接繪製 (保持下單日期由新到舊)
             if (window.currentTab === 'dashboard') {
                 if (data.mode === 'Mode_A') document.getElementById('dash-mode-a').innerHTML += cardHTML;
                 if (data.mode === 'Mode_B') document.getElementById('dash-mode-b').innerHTML += cardHTML;
@@ -535,6 +536,7 @@ const firebaseConfig = {
                 document.getElementById('single-mode-list').innerHTML += cardHTML;
             }
 
+            // 報表：將符合條件的訂單先存入陣列
             if (window.currentTab === 'report') {
                 const passStatus = (reportStatus === 'all') || (data.status === reportStatus);
                 let passTime = true;
@@ -557,43 +559,58 @@ const firebaseConfig = {
                     reportCount++;
                     if (data.status === 'completed') totalCompleted += (data.twd || 0);
                     else totalPending += (data.twd || 0);
-
-                    const statusStr = data.status === 'completed' ? '<span class="text-emerald-600 font-bold">✅ 已完成</span>' : '<span class="text-yellow-600 font-bold">⏳ 未完成</span>';
-                    const modeMap = { Mode_A: "自營", Mode_B: "轉出", Mode_C: "轉入" };
                     
-                    const cleanNote = (data.note || '無備註').replace(/"/g, '&quot;');
-                    const cleanSpecial = data.special_info ? `\n\n⚠️ 特殊資訊：\n${data.special_info}`.replace(/"/g, '&quot;') : '';
-                    const hoverText = `📝 行程與金流備註：\n------------------------\n${cleanNote}${cleanSpecial}`;
-
-                    const unitTableDisplay = data.unit_price ? `<br><span class="text-[10px] text-blue-500 font-bold block leading-tight mt-1">${data.unit_price} × ${data.pax}</span>` : '';
-
-                    document.getElementById('report-table-body').innerHTML += `
-                        <tr class="hover:bg-slate-50 border-b border-slate-200 transition cursor-help" title="${hoverText}">
-                            <td class="p-3">${statusStr}</td>
-                            <td class="p-3">${modeMap[data.mode]}</td>
-                            <td class="p-3 font-bold">
-                                ${data.customer} <span class="text-xs text-slate-400">(${data.pax}人)</span>
-                                <div class="mt-1 no-print">
-                                    <span class="inline-flex items-center text-[10px] bg-blue-50 text-blue-600 border border-blue-200 px-1.5 py-0.5 rounded shadow-sm">
-                                        💬 停駐看備註
-                                    </span>
-                                </div>
-                            </td>
-                            <td class="p-3 text-orange-600 font-bold text-xs">${data.departure_time || '-'}</td>
-                            <td class="p-3 text-right">
-                                <span class="font-bold text-slate-800 text-sm">A$ ${data.aud}</span>
-                                ${unitTableDisplay}
-                                <p class="text-xs text-slate-500 font-normal mt-1">NT$ ${data.twd.toLocaleString()}</p>
-                            </td>
-                            <td class="p-3 text-center no-print">
-                                <button onclick="editOrder('${doc.id}')" class="text-blue-600 hover:bg-blue-50 px-2 py-1 rounded text-xs mr-1 transition">修改</button>
-                                <button onclick="deleteOrder('${doc.id}')" class="text-red-600 hover:bg-red-50 px-2 py-1 rounded text-xs transition">刪除</button>
-                            </td>
-                        </tr>
-                    `;
+                    reportRows.push(doc); // 將過濾後的資料暫存起來
                 }
             }
         });
+
+        // --- 核心更新：報表專屬的「出發日期：由早到晚 (1號到月底)」排序 ---
+        if (window.currentTab === 'report') {
+            // 字串自然比對：2026-05-01 會排在 2026-05-02 前面
+            reportRows.sort((a, b) => {
+                const dateA = a.data.departure_time || "";
+                const dateB = b.data.departure_time || "";
+                return dateA.localeCompare(dateB);
+            });
+
+            reportRows.forEach(doc => {
+                const data = doc.data;
+                const statusStr = data.status === 'completed' ? '<span class="text-emerald-600 font-bold">✅ 已完成</span>' : '<span class="text-yellow-600 font-bold">⏳ 未完成</span>';
+                const modeMap = { Mode_A: "自營", Mode_B: "轉出", Mode_C: "轉入" };
+                
+                const cleanNote = (data.note || '無備註').replace(/"/g, '&quot;');
+                const cleanSpecial = data.special_info ? `\n\n⚠️ 特殊資訊：\n${data.special_info}`.replace(/"/g, '&quot;') : '';
+                const hoverText = `📝 行程與金流備註：\n------------------------\n${cleanNote}${cleanSpecial}`;
+
+                const unitTableDisplay = data.unit_price ? `<br><span class="text-[10px] text-blue-500 font-bold block leading-tight mt-1">${data.unit_price} × ${data.pax}</span>` : '';
+
+                document.getElementById('report-table-body').innerHTML += `
+                    <tr class="hover:bg-slate-50 border-b border-slate-200 transition cursor-help" title="${hoverText}">
+                        <td class="p-3">${statusStr}</td>
+                        <td class="p-3">${modeMap[data.mode]}</td>
+                        <td class="p-3 font-bold">
+                            ${data.customer} <span class="text-xs text-slate-400">(${data.pax}人)</span>
+                            <div class="mt-1 no-print">
+                                <span class="inline-flex items-center text-[10px] bg-blue-50 text-blue-600 border border-blue-200 px-1.5 py-0.5 rounded shadow-sm">
+                                    💬 停駐看備註
+                                </span>
+                            </div>
+                        </td>
+                        <td class="p-3 text-orange-600 font-bold text-xs">${data.departure_time || '-'}</td>
+                        <td class="p-3 text-right">
+                            <span class="font-bold text-slate-800 text-sm">A$ ${data.aud}</span>
+                            ${unitTableDisplay}
+                            <p class="text-xs text-slate-500 font-normal mt-1">NT$ ${data.twd.toLocaleString()}</p>
+                        </td>
+                        <td class="p-3 text-center no-print">
+                            <button onclick="editOrder('${doc.id}')" class="text-blue-600 hover:bg-blue-50 px-2 py-1 rounded text-xs mr-1 transition">修改</button>
+                            <button onclick="deleteOrder('${doc.id}')" class="text-red-600 hover:bg-red-50 px-2 py-1 rounded text-xs transition">刪除</button>
+                        </td>
+                    </tr>
+                `;
+            });
+        }
 
         if (document.getElementById('rep-total-count')) {
             document.getElementById('rep-total-count').innerText = reportCount;
