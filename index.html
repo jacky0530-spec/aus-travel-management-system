@@ -6,6 +6,8 @@
     <title>澳洲旅遊調度與發票管理系統</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;700&display=swap" rel="stylesheet">
+    <!-- 引入 html2canvas 用於匯出報表圖片 -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <style>
         body { font-family: 'Noto Sans TC', sans-serif; background-color: #f1f5f9; }
         .card-shadow { box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); }
@@ -13,11 +15,21 @@
         .order-card .action-btns { opacity: 0; transition: opacity 0.2s; }
         .order-card:hover .action-btns { opacity: 1; }
         .nav-btn.active { border-bottom: 4px solid #2563eb; color: #1e40af; font-weight: bold; background-color: #eff6ff; }
+        
+        /* 列印專屬樣式設定 */
+        @media print {
+            .no-print { display: none !important; } /* 隱藏導覽列、輸入框、按鈕 */
+            body { background-color: white; padding: 0; }
+            .card-shadow { box-shadow: none !important; border: 1px solid #e2e8f0; }
+            #report-container { padding: 10px; }
+            table { font-size: 12px; }
+            th, td { border-bottom: 1px solid #e2e8f0; }
+        }
     </style>
 </head>
 <body class="p-6 max-w-7xl mx-auto relative text-slate-800">
 
-    <header class="mb-6 flex justify-between items-end">
+    <header class="mb-6 flex justify-between items-end no-print">
         <div>
             <h1 class="text-3xl font-bold">澳洲旅遊業務總覽</h1>
             <p class="text-slate-500 mt-1 text-sm font-bold" id="statusText">正在檢查系統狀態...</p>
@@ -25,7 +37,7 @@
     </header>
 
     <!-- 頂部導覽列 (分頁切換) -->
-    <nav class="flex space-x-1 border-b border-slate-300 mb-6 bg-white rounded-t-lg overflow-hidden card-shadow">
+    <nav class="flex space-x-1 border-b border-slate-300 mb-6 bg-white rounded-t-lg overflow-hidden card-shadow no-print">
         <button onclick="switchTab('dashboard')" id="tab-dashboard" class="nav-btn active flex-1 py-3 text-center text-slate-600 hover:bg-slate-50 transition">📊 首頁總覽</button>
         <button onclick="switchTab('Mode_A')" id="tab-Mode_A" class="nav-btn flex-1 py-3 text-center text-slate-600 hover:bg-slate-50 transition">📦 自營接單 (A)</button>
         <button onclick="switchTab('Mode_B')" id="tab-Mode_B" class="nav-btn flex-1 py-3 text-center text-slate-600 hover:bg-slate-50 transition">📤 轉給同業 (B)</button>
@@ -34,7 +46,7 @@
     </nav>
 
     <!-- 輸入區域 -->
-    <div id="inputSection">
+    <div id="inputSection" class="no-print">
         <section class="mb-6 bg-blue-50 p-5 rounded-xl border border-blue-200 shadow-sm">
             <h2 class="text-base font-bold text-blue-800 mb-2">⚡ 智慧文字解析 (貼上 LINE 訂單)</h2>
             <textarea id="rawOrderText" rows="3" class="w-full p-2 border border-blue-300 rounded-md text-sm focus:ring-blue-500" placeholder="在此貼上 LINE 群組的原始文字訂單..."></textarea>
@@ -93,7 +105,7 @@
 
     <!-- ================= 視圖切換區 ================= -->
     
-    <main id="view-dashboard" class="view-section grid grid-cols-1 lg:grid-cols-3 gap-6">
+    <main id="view-dashboard" class="view-section grid grid-cols-1 lg:grid-cols-3 gap-6 no-print">
         <section class="bg-white rounded-xl border border-emerald-200 overflow-hidden shadow-sm">
             <div class="bg-emerald-50 p-3 border-b border-emerald-100"><h3 class="font-bold text-emerald-800">📦 自營接單 (A)</h3></div>
             <div id="dash-mode-a" class="p-4 space-y-4 max-h-96 overflow-y-auto no-scrollbar"></div>
@@ -108,7 +120,7 @@
         </section>
     </main>
 
-    <main id="view-single-mode" class="view-section hidden">
+    <main id="view-single-mode" class="view-section hidden no-print">
         <section class="bg-white rounded-xl border border-slate-200 overflow-hidden shadow-sm">
             <div class="bg-slate-100 p-4 border-b border-slate-200 flex justify-between items-center">
                 <h3 class="text-lg font-bold text-slate-800" id="single-mode-title">模式列表</h3>
@@ -117,53 +129,75 @@
         </section>
     </main>
 
+    <!-- 視圖 3：報表查詢網頁 (截圖與列印的主體) -->
     <main id="view-report" class="view-section hidden">
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-            <div class="bg-white p-5 rounded-xl card-shadow border-l-4 border-blue-500">
-                <p class="text-sm text-slate-500 mb-1">系統總訂單數</p>
-                <h3 class="text-3xl font-bold" id="rep-total-count">0</h3>
-            </div>
-            <div class="bg-white p-5 rounded-xl card-shadow border-l-4 border-yellow-500">
-                <p class="text-sm text-slate-500 mb-1">⏳ 未完成 (Pending) 總額</p>
-                <h3 class="text-3xl font-bold text-yellow-600" id="rep-pending-sum">NT$ 0</h3>
-            </div>
-            <div class="bg-white p-5 rounded-xl card-shadow border-l-4 border-emerald-500">
-                <p class="text-sm text-slate-500 mb-1">✅ 已完成 (Completed) 總額</p>
-                <h3 class="text-3xl font-bold text-emerald-600" id="rep-completed-sum">NT$ 0</h3>
-            </div>
+        
+        <!-- 報表控制台 (列印時隱藏) -->
+        <div class="flex flex-wrap gap-3 mb-4 items-center bg-white p-4 rounded-xl border border-slate-200 shadow-sm no-print">
+            <h3 class="font-bold text-slate-800 mr-4">⚙️ 報表設定</h3>
+            
+            <select id="reportTimeType" class="p-2 border border-slate-300 rounded text-sm bg-slate-50" onchange="toggleDateInputs(); renderUI()">
+                <option value="all">顯示全部時間</option>
+                <option value="month">📅 月報表</option>
+                <option value="day">📆 日報表</option>
+            </select>
+            
+            <input type="month" id="monthPicker" class="hidden p-2 border border-slate-300 rounded text-sm" onchange="renderUI()">
+            <input type="date" id="datePicker" class="hidden p-2 border border-slate-300 rounded text-sm" onchange="renderUI()">
+            
+            <select id="reportFilter" class="p-2 border border-slate-300 rounded text-sm bg-slate-50 ml-auto" onchange="renderUI()">
+                <option value="all">訂單狀態：全部</option>
+                <option value="pending">⏳ 只顯示未完成</option>
+                <option value="completed">✅ 只顯示已完成</option>
+            </select>
+
+            <button onclick="window.print()" class="px-4 py-2 border border-slate-800 text-slate-800 font-bold rounded hover:bg-slate-100 text-sm transition">🖨️ 列印</button>
+            <button onclick="exportToImage()" class="px-4 py-2 bg-blue-600 text-white font-bold rounded hover:bg-blue-700 text-sm transition">📸 下載圖片</button>
         </div>
 
-        <section class="bg-white rounded-xl border border-slate-200 overflow-hidden shadow-sm">
-            <div class="bg-slate-50 p-4 border-b border-slate-200 flex justify-between items-center">
-                <h3 class="text-lg font-bold text-slate-800">訂單明細報表</h3>
-                <select id="reportFilter" class="p-2 border border-slate-300 rounded text-sm" onchange="renderUI()">
-                    <option value="all">顯示全部</option>
-                    <option value="pending">⏳ 只顯示未完成</option>
-                    <option value="completed">✅ 只顯示已完成</option>
-                </select>
+        <!-- 報表主體 (截圖範圍) -->
+        <div id="report-container" class="bg-white rounded-xl overflow-hidden p-2">
+            <h2 id="reportHeaderTitle" class="text-2xl font-bold text-center text-slate-800 py-4 hidden print:block">澳洲旅遊業務報表</h2>
+            
+            <!-- 報表狀態看板 -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                <div class="bg-slate-50 p-5 rounded-xl border border-slate-200 border-l-4 border-l-blue-500">
+                    <p class="text-sm text-slate-500 mb-1">符合條件訂單數</p>
+                    <h3 class="text-3xl font-bold text-slate-800" id="rep-total-count">0</h3>
+                </div>
+                <div class="bg-slate-50 p-5 rounded-xl border border-slate-200 border-l-4 border-l-yellow-500">
+                    <p class="text-sm text-slate-500 mb-1">⏳ 未完成總額</p>
+                    <h3 class="text-3xl font-bold text-yellow-600" id="rep-pending-sum">NT$ 0</h3>
+                </div>
+                <div class="bg-slate-50 p-5 rounded-xl border border-slate-200 border-l-4 border-l-emerald-500">
+                    <p class="text-sm text-slate-500 mb-1">✅ 已完成總額</p>
+                    <h3 class="text-3xl font-bold text-emerald-600" id="rep-completed-sum">NT$ 0</h3>
+                </div>
             </div>
-            <div class="p-0 overflow-x-auto">
+
+            <!-- 報表列表 -->
+            <div class="border border-slate-200 rounded-lg overflow-x-auto">
                 <table class="w-full text-left border-collapse text-sm">
                     <thead>
-                        <tr class="bg-slate-100 border-b border-slate-200 text-slate-600">
+                        <tr class="bg-slate-800 text-white">
                             <th class="p-3">狀態</th>
                             <th class="p-3">模式</th>
                             <th class="p-3">姓名/單號</th>
                             <th class="p-3">出發時間</th>
-                            <th class="p-3">金額</th>
-                            <th class="p-3">操作</th>
+                            <th class="p-3 text-right">金額</th>
+                            <th class="p-3 text-center no-print">操作</th>
                         </tr>
                     </thead>
-                    <tbody id="report-table-body" class="divide-y divide-slate-100">
+                    <tbody id="report-table-body" class="divide-y divide-slate-200 bg-white">
                         <!-- 表格資料由 JS 產生 -->
                     </tbody>
                 </table>
             </div>
-        </section>
+        </div>
     </main>
 
     <!-- 共用彈窗 -->
-    <div id="confirmModal" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden flex items-center justify-center backdrop-blur-sm">
+    <div id="confirmModal" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden flex items-center justify-center backdrop-blur-sm no-print">
         <div class="bg-white p-8 rounded-2xl shadow-2xl max-w-md w-full">
             <h2 class="text-xl font-bold text-slate-800 border-b pb-3 mb-4" id="modalTitle">確認訂單資訊</h2>
             <div class="space-y-2 text-slate-700 text-sm">
@@ -210,6 +244,51 @@
             document.getElementById('single-mode-title').innerText = titles[tabName];
         }
         window.renderUI(); 
+    };
+
+    window.toggleDateInputs = () => {
+        const type = document.getElementById('reportTimeType').value;
+        const mp = document.getElementById('monthPicker');
+        const dp = document.getElementById('datePicker');
+        
+        mp.classList.toggle('hidden', type !== 'month');
+        dp.classList.toggle('hidden', type !== 'day');
+        
+        // 自動填入當前時間供快速查詢
+        const today = new Date();
+        const yyyy = today.getFullYear();
+        const mm = String(today.getMonth() + 1).padStart(2, '0');
+        const dd = String(today.getDate()).padStart(2, '0');
+        
+        if(type === 'month' && !mp.value) mp.value = `${yyyy}-${mm}`;
+        if(type === 'day' && !dp.value) dp.value = `${yyyy}-${mm}-${dd}`;
+        
+        // 更新列印大標題
+        const header = document.getElementById('reportHeaderTitle');
+        if(type === 'all') header.innerText = "澳洲旅遊業務報表 (全部)";
+        else if (type === 'month') header.innerText = `澳洲旅遊業務月報表 (${mp.value})`;
+        else if (type === 'day') header.innerText = `澳洲旅遊業務日報表 (${dp.value})`;
+    };
+
+    window.exportToImage = () => {
+        const container = document.getElementById('report-container');
+        document.getElementById('reportHeaderTitle').classList.remove('hidden'); // 截圖時顯示大標題
+        
+        // 暫時隱藏表格操作區 (保持截圖乾淨)
+        const noPrintElements = container.querySelectorAll('.no-print');
+        noPrintElements.forEach(el => el.style.display = 'none');
+
+        html2canvas(container, { scale: 2, backgroundColor: '#ffffff' }).then(canvas => {
+            const link = document.createElement('a');
+            const dateStr = new Date().toISOString().slice(0,10);
+            link.download = `旅遊財務報表_${dateStr}.png`;
+            link.href = canvas.toDataURL('image/png');
+            link.click();
+            
+            // 恢復畫面
+            document.getElementById('reportHeaderTitle').classList.add('hidden');
+            noPrintElements.forEach(el => el.style.display = '');
+        });
     };
 
     window.resetFormUI = () => {
@@ -325,8 +404,6 @@
     // ==========================================
     // 第二部分：Firebase 與畫面渲染引擎
     // ==========================================
-    
-    // ⚠️ 請填入您的 Firebase 金鑰
 const firebaseConfig = {
   apiKey: "AIzaSyCBKoPGs0TW6VI1Ws3-61USpjARQR-O8Mc",
   authDomain: "aus-travel-system.firebaseapp.com",
@@ -378,56 +455,75 @@ const firebaseConfig = {
         document.getElementById('single-mode-list').innerHTML = '';
         document.getElementById('report-table-body').innerHTML = '';
 
+        let reportCount = 0;
         let totalPending = 0;
         let totalCompleted = 0;
-        const reportFilter = document.getElementById('reportFilter') ? document.getElementById('reportFilter').value : 'all';
+        
+        // 取得報表過濾條件
+        const reportStatus = document.getElementById('reportFilter') ? document.getElementById('reportFilter').value : 'all';
+        const reportTimeType = document.getElementById('reportTimeType') ? document.getElementById('reportTimeType').value : 'all';
+        const targetMonth = document.getElementById('monthPicker') ? document.getElementById('monthPicker').value : '';
+        const targetDate = document.getElementById('datePicker') ? document.getElementById('datePicker').value : '';
 
         window.allOrders.forEach((doc) => {
             const data = doc.data;
             const cardHTML = generateCardHTML(doc);
 
-            if (data.status === 'completed') totalCompleted += (data.twd || 0);
-            else totalPending += (data.twd || 0);
-
+            // Dashboard & Single Mode 直接繪製
             if (window.currentTab === 'dashboard') {
                 if (data.mode === 'Mode_A') document.getElementById('dash-mode-a').innerHTML += cardHTML;
                 if (data.mode === 'Mode_B') document.getElementById('dash-mode-b').innerHTML += cardHTML;
                 if (data.mode === 'Mode_C') document.getElementById('dash-mode-c').innerHTML += cardHTML;
             }
-            
-            if (['Mode_A', 'Mode_B', 'Mode_C'].includes(window.currentTab)) {
-                if (data.mode === window.currentTab) document.getElementById('single-mode-list').innerHTML += cardHTML;
+            if (['Mode_A', 'Mode_B', 'Mode_C'].includes(window.currentTab) && data.mode === window.currentTab) {
+                document.getElementById('single-mode-list').innerHTML += cardHTML;
             }
 
-            // --- 報表頁面：新增滑鼠懸浮 (Hover) 顯示備註提示 ---
+            // --- 報表頁面處理 ---
             if (window.currentTab === 'report') {
-                const passFilter = (reportFilter === 'all') || (data.status === reportFilter);
-                if (passFilter) {
+                // 1. 判斷狀態是否符合
+                const passStatus = (reportStatus === 'all') || (data.status === reportStatus);
+                
+                // 2. 判斷時間是否符合 (將 Firebase Timestamp 轉為本地 YYYY-MM-DD 格式)
+                let passTime = true;
+                if(reportTimeType !== 'all') {
+                    const d = data.timestamp?.toDate ? data.timestamp.toDate() : new Date(data.timestamp);
+                    const localDateStr = new Date(d.getTime() - (d.getTimezoneOffset() * 60000)).toISOString();
+                    
+                    if (reportTimeType === 'month' && targetMonth) passTime = localDateStr.startsWith(targetMonth);
+                    else if (reportTimeType === 'day' && targetDate) passTime = localDateStr.startsWith(targetDate);
+                }
+
+                if (passStatus && passTime) {
+                    reportCount++;
+                    if (data.status === 'completed') totalCompleted += (data.twd || 0);
+                    else totalPending += (data.twd || 0);
+
                     const statusStr = data.status === 'completed' ? '<span class="text-emerald-600 font-bold">✅ 已完成</span>' : '<span class="text-yellow-600 font-bold">⏳ 未完成</span>';
                     const modeMap = { Mode_A: "自營", Mode_B: "轉出", Mode_C: "轉入" };
                     
-                    // 處理 tooltip 文字，過濾雙引號防止 HTML 錯誤
+                    // Hover 文字處理
                     const cleanNote = (data.note || '無備註').replace(/"/g, '&quot;');
                     const cleanSpecial = data.special_info ? `\n\n⚠️ 特殊資訊：\n${data.special_info}`.replace(/"/g, '&quot;') : '';
                     const hoverText = `📝 行程與金流備註：\n------------------------\n${cleanNote}${cleanSpecial}`;
 
                     document.getElementById('report-table-body').innerHTML += `
-                        <tr class="hover:bg-slate-50 border-b border-slate-100 transition cursor-help" title="${hoverText}">
+                        <tr class="hover:bg-slate-50 border-b border-slate-200 transition cursor-help" title="${hoverText}">
                             <td class="p-3">${statusStr}</td>
                             <td class="p-3">${modeMap[data.mode]}</td>
                             <td class="p-3 font-bold">
                                 ${data.customer} <span class="text-xs text-slate-400">(${data.pax}人)</span>
-                                <div class="mt-1">
+                                <div class="mt-1 no-print">
                                     <span class="inline-flex items-center text-[10px] bg-blue-50 text-blue-600 border border-blue-200 px-1.5 py-0.5 rounded shadow-sm">
                                         💬 停駐看備註
                                     </span>
                                 </div>
                             </td>
-                            <td class="p-3 text-orange-600 font-bold">${data.departure_time || '-'}</td>
-                            <td class="p-3 font-bold">A$ ${data.aud} <br><span class="text-xs text-slate-500 font-normal">NT$ ${data.twd.toLocaleString()}</span></td>
-                            <td class="p-3">
-                                <button onclick="editOrder('${doc.id}')" class="text-blue-600 hover:underline text-xs mr-2">修改</button>
-                                <button onclick="deleteOrder('${doc.id}')" class="text-red-600 hover:underline text-xs">刪除</button>
+                            <td class="p-3 text-orange-600 font-bold text-xs">${data.departure_time || '-'}</td>
+                            <td class="p-3 font-bold text-right">A$ ${data.aud} <br><span class="text-xs text-slate-500 font-normal">NT$ ${data.twd.toLocaleString()}</span></td>
+                            <td class="p-3 text-center no-print">
+                                <button onclick="editOrder('${doc.id}')" class="text-blue-600 hover:bg-blue-50 px-2 py-1 rounded text-xs mr-1 transition">修改</button>
+                                <button onclick="deleteOrder('${doc.id}')" class="text-red-600 hover:bg-red-50 px-2 py-1 rounded text-xs transition">刪除</button>
                             </td>
                         </tr>
                     `;
@@ -436,7 +532,7 @@ const firebaseConfig = {
         });
 
         if (document.getElementById('rep-total-count')) {
-            document.getElementById('rep-total-count').innerText = window.allOrders.length;
+            document.getElementById('rep-total-count').innerText = reportCount;
             document.getElementById('rep-pending-sum').innerText = "NT$ " + totalPending.toLocaleString();
             document.getElementById('rep-completed-sum').innerText = "NT$ " + totalCompleted.toLocaleString();
         }
