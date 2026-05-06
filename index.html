@@ -68,7 +68,6 @@
                 </div>
                 <div class="md:col-span-3">
                     <label class="block text-xs font-medium text-slate-700">出發時間</label>
-                    <!-- 修改：加上醒目的樣式並預設為必填建議 -->
                     <input type="text" id="departureTime" placeholder="YYYY-MM-DD" class="mt-1 block w-full p-2 border border-slate-300 rounded-md bg-yellow-50 focus:bg-white text-sm font-bold text-slate-800">
                 </div>
                 
@@ -133,13 +132,14 @@
     <main id="view-report" class="view-section hidden">
         <div class="flex flex-wrap gap-3 mb-4 items-center bg-white p-4 rounded-xl border border-slate-200 shadow-sm no-print">
             <h3 class="font-bold text-slate-800 mr-4">⚙️ 報表設定</h3>
-            <select id="reportTimeType" class="p-2 border border-slate-300 rounded text-sm bg-slate-50" onchange="toggleDateInputs(); renderUI()">
+            <!-- 更新：選擇日期與選擇報表類型時都會觸發 updateReportHeader() 更新抬頭 -->
+            <select id="reportTimeType" class="p-2 border border-slate-300 rounded text-sm bg-slate-50" onchange="toggleDateInputs(); updateReportHeader(); renderUI()">
                 <option value="all">顯示全部出發時間</option>
                 <option value="month">📅 出發月報表</option>
                 <option value="day">📆 出發日報表</option>
             </select>
-            <input type="month" id="monthPicker" class="hidden p-2 border border-slate-300 rounded text-sm" onchange="renderUI()">
-            <input type="date" id="datePicker" class="hidden p-2 border border-slate-300 rounded text-sm" onchange="renderUI()">
+            <input type="month" id="monthPicker" class="hidden p-2 border border-slate-300 rounded text-sm" onchange="updateReportHeader(); renderUI()">
+            <input type="date" id="datePicker" class="hidden p-2 border border-slate-300 rounded text-sm" onchange="updateReportHeader(); renderUI()">
             
             <select id="reportFilter" class="p-2 border border-slate-300 rounded text-sm bg-slate-50 ml-auto" onchange="renderUI()">
                 <option value="all">訂單狀態：全部</option>
@@ -151,7 +151,8 @@
         </div>
 
         <div id="report-container" class="bg-white rounded-xl overflow-hidden p-2">
-            <h2 id="reportHeaderTitle" class="text-2xl font-bold text-center text-slate-800 py-4 hidden print:block">澳洲旅遊業務出發報表</h2>
+            <!-- 報表大標題 -->
+            <h2 id="reportHeaderTitle" class="text-2xl font-bold text-center text-slate-800 py-4 hidden print:block">澳洲旅遊業務出發報表 (全部出發時間)</h2>
             
             <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
                 <div class="bg-slate-50 p-5 rounded-xl border border-slate-200 border-l-4 border-l-blue-500">
@@ -210,7 +211,6 @@
     window.currentTab = 'dashboard';
     window.allOrders = []; 
 
-    // --- 取得當天日期的輔助函式 YYYY-MM-DD ---
     window.getTodayFormatted = () => {
         const today = new Date();
         const yyyy = today.getFullYear();
@@ -219,7 +219,6 @@
         return `${yyyy}-${mm}-${dd}`;
     };
 
-    // 頁面載入時，立即將出發時間設為今天
     document.getElementById('departureTime').value = window.getTodayFormatted();
 
     const calculateTotal = () => {
@@ -258,6 +257,22 @@
         window.renderUI(); 
     };
 
+    // --- 核心更新：根據選擇日期動態更新抬頭 ---
+    window.updateReportHeader = () => {
+        const type = document.getElementById('reportTimeType').value;
+        const mp = document.getElementById('monthPicker').value;
+        const dp = document.getElementById('datePicker').value;
+        const header = document.getElementById('reportHeaderTitle');
+        
+        if (type === 'all') {
+            header.innerText = "澳洲旅遊業務出發報表 (全部出發時間)";
+        } else if (type === 'month') {
+            header.innerText = `澳洲旅遊業務出發月報表 (${mp})`;
+        } else if (type === 'day') {
+            header.innerText = `澳洲旅遊業務出發日報表 (${dp})`;
+        }
+    };
+
     window.toggleDateInputs = () => {
         const type = document.getElementById('reportTimeType').value;
         const mp = document.getElementById('monthPicker');
@@ -272,11 +287,6 @@
         
         if(type === 'month' && !mp.value) mp.value = `${yyyy}-${mm}`;
         if(type === 'day' && !dp.value) dp.value = `${yyyy}-${mm}-${dd}`;
-        
-        const header = document.getElementById('reportHeaderTitle');
-        if(type === 'all') header.innerText = "澳洲旅遊業務報表 (全部出發時間)";
-        else if (type === 'month') header.innerText = `澳洲旅遊業務出發月報表 (${mp.value})`;
-        else if (type === 'day') header.innerText = `澳洲旅遊業務出發日報表 (${dp.value})`;
     };
 
     window.exportToImage = () => {
@@ -287,8 +297,14 @@
 
         html2canvas(container, { scale: 2, backgroundColor: '#ffffff' }).then(canvas => {
             const link = document.createElement('a');
-            const dateStr = new Date().toISOString().slice(0,10);
-            link.download = `旅遊財務出發報表_${dateStr}.png`;
+            
+            // --- 核心更新：將挑選的日期作為下載檔名 ---
+            const type = document.getElementById('reportTimeType').value;
+            let dateSuffix = '全部';
+            if (type === 'month') dateSuffix = document.getElementById('monthPicker').value;
+            else if (type === 'day') dateSuffix = document.getElementById('datePicker').value;
+
+            link.download = `旅遊財務出發報表_${dateSuffix}.png`;
             link.href = canvas.toDataURL('image/png');
             link.click();
             document.getElementById('reportHeaderTitle').classList.add('hidden');
@@ -301,10 +317,7 @@
         document.getElementById('orderForm').reset();
         document.getElementById('fxRate').value = '23'; 
         document.getElementById('rawOrderText').value = '';
-        
-        // 核心更新：重置表單時，出發日期預設回今天
         document.getElementById('departureTime').value = window.getTodayFormatted(); 
-        
         if (['Mode_A', 'Mode_B', 'Mode_C'].includes(window.currentTab)) document.getElementById('mode').value = window.currentTab;
 
         const formTitle = document.getElementById('formTitle');
@@ -324,10 +337,7 @@
         if(!rawText) return alert("請先貼上文字");
 
         let mode = document.getElementById('mode').value; 
-        let customer = ''; let aud = ''; let special = ''; let pax = 1; let note = ''; let unitPrice = '';
-        
-        // 預設出發日期為當天
-        let departureTime = window.getTodayFormatted(); 
+        let customer = ''; let aud = ''; let special = ''; let pax = 1; let note = ''; let departureTime = window.getTodayFormatted(); let unitPrice = '';
         
         const upperText = rawText.toUpperCase();
         if (upperText.includes("FLIGGY") || upperText.includes("LITTLE FOX")) mode = 'Mode_B'; 
@@ -363,20 +373,14 @@
             if (totalMatch) aud = totalMatch[1];
         }
 
-        // --- 核心更新：強力日期解析引擎，轉化為 YYYY-MM-DD ---
         const dateRegex = /([0-9]{4})[-/年]([0-9]{1,2})[-/月]([0-9]{1,2})[日號]?|([0-9]{1,2})[-/月]([0-9]{1,2})[日號]?/;
-        
-        // 尋找包含「出發時間/出發日期」的行
         const depLine = rawText.match(/出發(?:時間|日期)[^\n]+/);
         const dateLine = rawText.match(/日期[：:-][^\n]+/);
         let targetLine = (depLine ? depLine[0] : null) || (dateLine ? dateLine[0] : null);
         let dateMatch;
         
-        if (targetLine) {
-            dateMatch = targetLine.match(dateRegex);
-        } else {
-            dateMatch = rawText.match(dateRegex); // 退而求其次全域尋找日期
-        }
+        if (targetLine) dateMatch = targetLine.match(dateRegex);
+        else dateMatch = rawText.match(dateRegex); 
 
         if (dateMatch) {
             let y, m, d;
@@ -386,17 +390,11 @@
                 y = new Date().getFullYear(); m = dateMatch[4]; d = dateMatch[5];
             }
             
-            if (m && d) {
-                // 組合並補零 (例如 2026-05-11)
-                departureTime = `${y}-${m.padStart(2, '0')}-${d.padStart(2, '0')}`;
-            }
+            if (m && d) departureTime = `${y}-${m.padStart(2, '0')}-${d.padStart(2, '0')}`;
             
-            // 如果該行有包含時間 (例如 09:30)，附加在後方
             if (targetLine) {
                 const timeStrMatch = targetLine.match(/([0-2]?[0-9]:[0-5][0-9](?:[aApP][mM])?)/i);
-                if (timeStrMatch) {
-                    departureTime += " " + timeStrMatch[1];
-                }
+                if (timeStrMatch) departureTime += " " + timeStrMatch[1];
             }
         }
 
