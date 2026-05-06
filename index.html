@@ -186,7 +186,6 @@
         </div>
     </main>
 
-    <!-- 共用彈窗 -->
     <div id="confirmModal" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden flex items-center justify-center backdrop-blur-sm no-print">
         <div class="bg-white p-8 rounded-2xl shadow-2xl max-w-md w-full">
             <h2 class="text-xl font-bold text-slate-800 border-b pb-3 mb-4" id="modalTitle">確認訂單資訊</h2>
@@ -295,7 +294,6 @@
 
         html2canvas(container, { scale: 2, backgroundColor: '#ffffff' }).then(canvas => {
             const link = document.createElement('a');
-            
             const type = document.getElementById('reportTimeType').value;
             let dateSuffix = '全部';
             if (type === 'month') dateSuffix = document.getElementById('monthPicker').value;
@@ -465,9 +463,17 @@ const firebaseConfig = {
   appId: "1:733398393106:web:370b0717ef760be29953cb",
   measurementId: "G-2CPJ8HH5PC"
 };
-
     let db;
     let firestoreRef; 
+
+    // --- 取得統一時間毫秒數，確保精準排序 ---
+    const getTimestampMs = (ts) => {
+        if (!ts) return 0;
+        if (ts.toMillis) return ts.toMillis();
+        if (ts.toDate) return ts.toDate().getTime();
+        if (ts.seconds) return ts.seconds * 1000;
+        return new Date(ts).getTime();
+    };
 
     const generateCardHTML = (doc) => {
         const data = doc.data;
@@ -511,22 +517,27 @@ const firebaseConfig = {
         document.getElementById('single-mode-list').innerHTML = '';
         document.getElementById('report-table-body').innerHTML = '';
 
+        // ==========================================
+        // 核心更新：強制全域陣列依照「下單時間 (由近到遠)」重新排序
+        // 阻絕所有因為 Firebase 網路延遲造成的亂跳現象
+        // ==========================================
+        window.allOrders.sort((a, b) => getTimestampMs(b.data.timestamp) - getTimestampMs(a.data.timestamp));
+
         let reportCount = 0;
         let totalPending = 0;
         let totalCompleted = 0;
-        let reportRows = []; // 建立一個暫存陣列，用來將報表重新排序
+        let reportRows = []; // 暫存報表行，以便後續依照出發時間排序
         
         const reportStatus = document.getElementById('reportFilter') ? document.getElementById('reportFilter').value : 'all';
         const reportTimeType = document.getElementById('reportTimeType') ? document.getElementById('reportTimeType').value : 'all';
         const targetMonth = document.getElementById('monthPicker') ? document.getElementById('monthPicker').value : '';
         const targetDate = document.getElementById('datePicker') ? document.getElementById('datePicker').value : '';
 
-        // allOrders 已經在底層設定為下單時間 (timestamp) 從近到遠排列
         window.allOrders.forEach((doc) => {
             const data = doc.data;
             const cardHTML = generateCardHTML(doc);
 
-            // 卡片直接繪製 (保持下單日期由新到舊)
+            // 1. 卡片視圖 (已自動繼承 allOrders 的「由近到遠」排序)
             if (window.currentTab === 'dashboard') {
                 if (data.mode === 'Mode_A') document.getElementById('dash-mode-a').innerHTML += cardHTML;
                 if (data.mode === 'Mode_B') document.getElementById('dash-mode-b').innerHTML += cardHTML;
@@ -536,7 +547,7 @@ const firebaseConfig = {
                 document.getElementById('single-mode-list').innerHTML += cardHTML;
             }
 
-            // 報表：將符合條件的訂單先存入陣列
+            // 2. 報表資料蒐集
             if (window.currentTab === 'report') {
                 const passStatus = (reportStatus === 'all') || (data.status === reportStatus);
                 let passTime = true;
@@ -559,19 +570,19 @@ const firebaseConfig = {
                     reportCount++;
                     if (data.status === 'completed') totalCompleted += (data.twd || 0);
                     else totalPending += (data.twd || 0);
-                    
-                    reportRows.push(doc); // 將過濾後的資料暫存起來
+                    reportRows.push(doc);
                 }
             }
         });
 
-        // --- 核心更新：報表專屬的「出發日期：由早到晚 (1號到月底)」排序 ---
+        // ==========================================
+        // 核心更新：報表專屬的「出發時間 (由 1 號排到月底)」字串比對排序
+        // ==========================================
         if (window.currentTab === 'report') {
-            // 字串自然比對：2026-05-01 會排在 2026-05-02 前面
             reportRows.sort((a, b) => {
                 const dateA = a.data.departure_time || "";
                 const dateB = b.data.departure_time || "";
-                return dateA.localeCompare(dateB);
+                return dateA.localeCompare(dateB); 
             });
 
             reportRows.forEach(doc => {
@@ -679,6 +690,7 @@ const firebaseConfig = {
             window.scrollTo({ top: 0, behavior: 'smooth' });
         };
 
+        // Firebase 監聽器
         const q = firestoreRef.query(firestoreRef.collection(db, "orders"), firestoreRef.orderBy("timestamp", "desc"));
         firestoreRef.onSnapshot(q, (snapshot) => {
             window.allOrders = [];
