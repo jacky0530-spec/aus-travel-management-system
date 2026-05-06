@@ -34,7 +34,6 @@
         </div>
     </header>
 
-    <!-- 頂部導覽列 (分頁切換) -->
     <nav class="flex space-x-1 border-b border-slate-300 mb-6 bg-white rounded-t-lg overflow-hidden card-shadow no-print">
         <button onclick="switchTab('dashboard')" id="tab-dashboard" class="nav-btn active flex-1 py-3 text-center text-slate-600 hover:bg-slate-50 transition">📊 首頁總覽</button>
         <button onclick="switchTab('Mode_A')" id="tab-Mode_A" class="nav-btn flex-1 py-3 text-center text-slate-600 hover:bg-slate-50 transition">📦 自營接單 (A)</button>
@@ -43,7 +42,6 @@
         <button onclick="switchTab('report')" id="tab-report" class="nav-btn flex-1 py-3 text-center text-slate-600 hover:bg-slate-50 transition">📈 報表查詢</button>
     </nav>
 
-    <!-- 輸入區域 -->
     <div id="inputSection" class="no-print">
         <section class="mb-6 bg-blue-50 p-5 rounded-xl border border-blue-200 shadow-sm">
             <h2 class="text-base font-bold text-blue-800 mb-2">⚡ 智慧文字解析 (貼上 LINE 訂單)</h2>
@@ -53,7 +51,6 @@
             </div>
         </section>
 
-        <!-- 表單區塊 -->
         <section class="mb-8 bg-white p-5 rounded-xl border border-slate-200 card-shadow transition-colors duration-300" id="formSection">
             <h2 id="formTitle" class="text-lg font-bold text-slate-800 mb-3">🆕 快速錄入新訂單</h2>
             <form id="orderForm" class="grid grid-cols-1 md:grid-cols-8 gap-3">
@@ -71,7 +68,8 @@
                 </div>
                 <div class="md:col-span-3">
                     <label class="block text-xs font-medium text-slate-700">出發時間</label>
-                    <input type="text" id="departureTime" placeholder="如 05-04 09:30" class="mt-1 block w-full p-2 border border-slate-300 rounded-md bg-yellow-50 focus:bg-white text-sm">
+                    <!-- 修改：加上醒目的樣式並預設為必填建議 -->
+                    <input type="text" id="departureTime" placeholder="YYYY-MM-DD" class="mt-1 block w-full p-2 border border-slate-300 rounded-md bg-yellow-50 focus:bg-white text-sm font-bold text-slate-800">
                 </div>
                 
                 <div class="md:col-span-2">
@@ -108,7 +106,6 @@
         </section>
     </div>
 
-    <!-- ================= 視圖切換區 ================= -->
     <main id="view-dashboard" class="view-section grid grid-cols-1 lg:grid-cols-3 gap-6 no-print">
         <section class="bg-white rounded-xl border border-emerald-200 overflow-hidden shadow-sm">
             <div class="bg-emerald-50 p-3 border-b border-emerald-100"><h3 class="font-bold text-emerald-800">📦 自營接單 (A)</h3></div>
@@ -190,7 +187,6 @@
         </div>
     </main>
 
-    <!-- 共用彈窗 -->
     <div id="confirmModal" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden flex items-center justify-center backdrop-blur-sm no-print">
         <div class="bg-white p-8 rounded-2xl shadow-2xl max-w-md w-full">
             <h2 class="text-xl font-bold text-slate-800 border-b pb-3 mb-4" id="modalTitle">確認訂單資訊</h2>
@@ -214,7 +210,18 @@
     window.currentTab = 'dashboard';
     window.allOrders = []; 
 
-    // --- 單價與人數：自動連動計算邏輯 ---
+    // --- 取得當天日期的輔助函式 YYYY-MM-DD ---
+    window.getTodayFormatted = () => {
+        const today = new Date();
+        const yyyy = today.getFullYear();
+        const mm = String(today.getMonth() + 1).padStart(2, '0');
+        const dd = String(today.getDate()).padStart(2, '0');
+        return `${yyyy}-${mm}-${dd}`;
+    };
+
+    // 頁面載入時，立即將出發時間設為今天
+    document.getElementById('departureTime').value = window.getTodayFormatted();
+
     const calculateTotal = () => {
         const unit = parseFloat(document.getElementById('unitPrice').value);
         const pax = parseInt(document.getElementById('pax').value) || 1;
@@ -294,6 +301,10 @@
         document.getElementById('orderForm').reset();
         document.getElementById('fxRate').value = '23'; 
         document.getElementById('rawOrderText').value = '';
+        
+        // 核心更新：重置表單時，出發日期預設回今天
+        document.getElementById('departureTime').value = window.getTodayFormatted(); 
+        
         if (['Mode_A', 'Mode_B', 'Mode_C'].includes(window.currentTab)) document.getElementById('mode').value = window.currentTab;
 
         const formTitle = document.getElementById('formTitle');
@@ -313,7 +324,10 @@
         if(!rawText) return alert("請先貼上文字");
 
         let mode = document.getElementById('mode').value; 
-        let customer = ''; let aud = ''; let special = ''; let pax = 1; let note = ''; let departureTime = ''; let unitPrice = '';
+        let customer = ''; let aud = ''; let special = ''; let pax = 1; let note = ''; let unitPrice = '';
+        
+        // 預設出發日期為當天
+        let departureTime = window.getTodayFormatted(); 
         
         const upperText = rawText.toUpperCase();
         if (upperText.includes("FLIGGY") || upperText.includes("LITTLE FOX")) mode = 'Mode_B'; 
@@ -349,10 +363,42 @@
             if (totalMatch) aud = totalMatch[1];
         }
 
-        const timeMatch1 = rawText.match(/出發時間[^\d]*([^\n]+)/); 
-        const timeMatch2 = rawText.match(/(\d{1,2}月\d{1,2}號)/); 
-        if (timeMatch1) departureTime = timeMatch1[1].trim();
-        else if (timeMatch2) departureTime = timeMatch2[1];
+        // --- 核心更新：強力日期解析引擎，轉化為 YYYY-MM-DD ---
+        const dateRegex = /([0-9]{4})[-/年]([0-9]{1,2})[-/月]([0-9]{1,2})[日號]?|([0-9]{1,2})[-/月]([0-9]{1,2})[日號]?/;
+        
+        // 尋找包含「出發時間/出發日期」的行
+        const depLine = rawText.match(/出發(?:時間|日期)[^\n]+/);
+        const dateLine = rawText.match(/日期[：:-][^\n]+/);
+        let targetLine = (depLine ? depLine[0] : null) || (dateLine ? dateLine[0] : null);
+        let dateMatch;
+        
+        if (targetLine) {
+            dateMatch = targetLine.match(dateRegex);
+        } else {
+            dateMatch = rawText.match(dateRegex); // 退而求其次全域尋找日期
+        }
+
+        if (dateMatch) {
+            let y, m, d;
+            if (dateMatch[1]) { 
+                y = dateMatch[1]; m = dateMatch[2]; d = dateMatch[3];
+            } else if (dateMatch[4]) { 
+                y = new Date().getFullYear(); m = dateMatch[4]; d = dateMatch[5];
+            }
+            
+            if (m && d) {
+                // 組合並補零 (例如 2026-05-11)
+                departureTime = `${y}-${m.padStart(2, '0')}-${d.padStart(2, '0')}`;
+            }
+            
+            // 如果該行有包含時間 (例如 09:30)，附加在後方
+            if (targetLine) {
+                const timeStrMatch = targetLine.match(/([0-2]?[0-9]:[0-5][0-9](?:[aApP][mM])?)/i);
+                if (timeStrMatch) {
+                    departureTime += " " + timeStrMatch[1];
+                }
+            }
+        }
 
         const weightMatch = rawText.match(/(\d{2,3}kg)/i);
         if (weightMatch) special += weightMatch[1] + " ";
@@ -379,7 +425,6 @@
         const fxVal = parseFloat(document.getElementById('fxRate').value) || 23;
         const twdVal = Math.round(audVal * fxVal) || 0;
 
-        // 核心修復：正確從 allOrders 中抓取現有訂單的 status 與 timestamp
         const existingOrder = window.currentEditId ? window.allOrders.find(o => o.id === window.currentEditId) : null;
         const currentStatus = existingOrder ? existingOrder.data.status : "pending";
         const currentTimestamp = existingOrder ? existingOrder.data.timestamp : new Date();
@@ -437,7 +482,6 @@ const firebaseConfig = {
         const paxDisplay = data.pax ? `<span class="bg-blue-100 text-blue-800 text-xs px-2 py-0.5 rounded">👤 ${data.pax}</span>` : '';
         const timeDisplay = data.departure_time ? `<p class="text-sm font-bold text-orange-600 mt-1">⏰ 出發：${data.departure_time}</p>` : '';
         
-        // 核心更新：卡片顯示單價算式
         const unitDisplay = data.unit_price ? `<span class="text-[10px] font-bold text-blue-500 block leading-tight mb-1">A$ ${data.unit_price} × ${data.pax}</span>` : '';
 
         return `
@@ -523,7 +567,6 @@ const firebaseConfig = {
                     const cleanSpecial = data.special_info ? `\n\n⚠️ 特殊資訊：\n${data.special_info}`.replace(/"/g, '&quot;') : '';
                     const hoverText = `📝 行程與金流備註：\n------------------------\n${cleanNote}${cleanSpecial}`;
 
-                    // 核心更新：報表清單顯示單價算式
                     const unitTableDisplay = data.unit_price ? `<br><span class="text-[10px] text-blue-500 font-bold block leading-tight mt-1">${data.unit_price} × ${data.pax}</span>` : '';
 
                     document.getElementById('report-table-body').innerHTML += `
