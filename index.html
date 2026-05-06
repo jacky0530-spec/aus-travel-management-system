@@ -106,17 +106,17 @@
     </div>
 
     <main id="view-dashboard" class="view-section grid grid-cols-1 lg:grid-cols-3 gap-6 no-print">
-        <section class="bg-white rounded-xl border border-emerald-200 overflow-hidden shadow-sm">
-            <div class="bg-emerald-50 p-3 border-b border-emerald-100"><h3 class="font-bold text-emerald-800">📦 自營接單 (A)</h3></div>
-            <div id="dash-mode-a" class="p-4 space-y-4 max-h-96 overflow-y-auto no-scrollbar"></div>
+        <section class="bg-white rounded-xl border border-emerald-200 overflow-hidden shadow-sm flex flex-col max-h-[800px]">
+            <div class="bg-emerald-50 p-3 border-b border-emerald-100 flex-shrink-0"><h3 class="font-bold text-emerald-800">📦 自營接單 (A)</h3></div>
+            <div id="dash-mode-a" class="p-4 space-y-4 overflow-y-auto no-scrollbar flex-grow"></div>
         </section>
-        <section class="bg-white rounded-xl border border-orange-200 overflow-hidden shadow-sm">
-            <div class="bg-orange-50 p-3 border-b border-orange-100"><h3 class="font-bold text-orange-800">📤 轉給同業 (B)</h3></div>
-            <div id="dash-mode-b" class="p-4 space-y-4 max-h-96 overflow-y-auto no-scrollbar"></div>
+        <section class="bg-white rounded-xl border border-orange-200 overflow-hidden shadow-sm flex flex-col max-h-[800px]">
+            <div class="bg-orange-50 p-3 border-b border-orange-100 flex-shrink-0"><h3 class="font-bold text-orange-800">📤 轉給同業 (B)</h3></div>
+            <div id="dash-mode-b" class="p-4 space-y-4 overflow-y-auto no-scrollbar flex-grow"></div>
         </section>
-        <section class="bg-white rounded-xl border border-purple-200 overflow-hidden shadow-sm">
-            <div class="bg-purple-50 p-3 border-b border-purple-100"><h3 class="font-bold text-purple-800">📥 同業轉入 (C)</h3></div>
-            <div id="dash-mode-c" class="p-4 space-y-4 max-h-96 overflow-y-auto no-scrollbar"></div>
+        <section class="bg-white rounded-xl border border-purple-200 overflow-hidden shadow-sm flex flex-col max-h-[800px]">
+            <div class="bg-purple-50 p-3 border-b border-purple-100 flex-shrink-0"><h3 class="font-bold text-purple-800">📥 同業轉入 (C)</h3></div>
+            <div id="dash-mode-c" class="p-4 space-y-4 overflow-y-auto no-scrollbar flex-grow"></div>
         </section>
     </main>
 
@@ -466,15 +466,6 @@ const firebaseConfig = {
     let db;
     let firestoreRef; 
 
-    // --- 取得統一時間毫秒數，確保精準排序 ---
-    const getTimestampMs = (ts) => {
-        if (!ts) return 0;
-        if (ts.toMillis) return ts.toMillis();
-        if (ts.toDate) return ts.toDate().getTime();
-        if (ts.seconds) return ts.seconds * 1000;
-        return new Date(ts).getTime();
-    };
-
     const generateCardHTML = (doc) => {
         const data = doc.data;
         const isCompleted = data.status === 'completed';
@@ -518,15 +509,18 @@ const firebaseConfig = {
         document.getElementById('report-table-body').innerHTML = '';
 
         // ==========================================
-        // 核心更新：強制全域陣列依照「下單時間 (由近到遠)」重新排序
-        // 阻絕所有因為 Firebase 網路延遲造成的亂跳現象
+        // 全站強制核心排序：一律依照「出發時間」由近到遠（升冪排序）
+        // 解決所有看板畫面亂跳與未按出發日排序的問題
         // ==========================================
-        window.allOrders.sort((a, b) => getTimestampMs(b.data.timestamp) - getTimestampMs(a.data.timestamp));
+        window.allOrders.sort((a, b) => {
+            const dateA = a.data.departure_time || "9999-12-31"; // 如果沒填日期，預設往後排
+            const dateB = b.data.departure_time || "9999-12-31";
+            return dateA.localeCompare(dateB); 
+        });
 
         let reportCount = 0;
         let totalPending = 0;
         let totalCompleted = 0;
-        let reportRows = []; // 暫存報表行，以便後續依照出發時間排序
         
         const reportStatus = document.getElementById('reportFilter') ? document.getElementById('reportFilter').value : 'all';
         const reportTimeType = document.getElementById('reportTimeType') ? document.getElementById('reportTimeType').value : 'all';
@@ -537,20 +531,20 @@ const firebaseConfig = {
             const data = doc.data;
             const cardHTML = generateCardHTML(doc);
 
-            // 1. 卡片視圖 (已自動繼承 allOrders 的「由近到遠」排序)
             if (window.currentTab === 'dashboard') {
                 if (data.mode === 'Mode_A') document.getElementById('dash-mode-a').innerHTML += cardHTML;
                 if (data.mode === 'Mode_B') document.getElementById('dash-mode-b').innerHTML += cardHTML;
                 if (data.mode === 'Mode_C') document.getElementById('dash-mode-c').innerHTML += cardHTML;
             }
+            
             if (['Mode_A', 'Mode_B', 'Mode_C'].includes(window.currentTab) && data.mode === window.currentTab) {
                 document.getElementById('single-mode-list').innerHTML += cardHTML;
             }
 
-            // 2. 報表資料蒐集
             if (window.currentTab === 'report') {
                 const passStatus = (reportStatus === 'all') || (data.status === reportStatus);
                 let passTime = true;
+                
                 if (reportTimeType !== 'all') {
                     const dep = data.departure_time || "";
                     if (reportTimeType === 'month' && targetMonth) {
@@ -570,58 +564,43 @@ const firebaseConfig = {
                     reportCount++;
                     if (data.status === 'completed') totalCompleted += (data.twd || 0);
                     else totalPending += (data.twd || 0);
-                    reportRows.push(doc);
+
+                    const statusStr = data.status === 'completed' ? '<span class="text-emerald-600 font-bold">✅ 已完成</span>' : '<span class="text-yellow-600 font-bold">⏳ 未完成</span>';
+                    const modeMap = { Mode_A: "自營", Mode_B: "轉出", Mode_C: "轉入" };
+                    
+                    const cleanNote = (data.note || '無備註').replace(/"/g, '&quot;');
+                    const cleanSpecial = data.special_info ? `\n\n⚠️ 特殊資訊：\n${data.special_info}`.replace(/"/g, '&quot;') : '';
+                    const hoverText = `📝 行程與金流備註：\n------------------------\n${cleanNote}${cleanSpecial}`;
+
+                    const unitTableDisplay = data.unit_price ? `<br><span class="text-[10px] text-blue-500 font-bold block leading-tight mt-1">${data.unit_price} × ${data.pax}</span>` : '';
+
+                    document.getElementById('report-table-body').innerHTML += `
+                        <tr class="hover:bg-slate-50 border-b border-slate-200 transition cursor-help" title="${hoverText}">
+                            <td class="p-3">${statusStr}</td>
+                            <td class="p-3">${modeMap[data.mode]}</td>
+                            <td class="p-3 font-bold">
+                                ${data.customer} <span class="text-xs text-slate-400">(${data.pax}人)</span>
+                                <div class="mt-1 no-print">
+                                    <span class="inline-flex items-center text-[10px] bg-blue-50 text-blue-600 border border-blue-200 px-1.5 py-0.5 rounded shadow-sm">
+                                        💬 停駐看備註
+                                    </span>
+                                </div>
+                            </td>
+                            <td class="p-3 text-orange-600 font-bold text-xs">${data.departure_time || '-'}</td>
+                            <td class="p-3 text-right">
+                                <span class="font-bold text-slate-800 text-sm">A$ ${data.aud}</span>
+                                ${unitTableDisplay}
+                                <p class="text-xs text-slate-500 font-normal mt-1">NT$ ${data.twd.toLocaleString()}</p>
+                            </td>
+                            <td class="p-3 text-center no-print">
+                                <button onclick="editOrder('${doc.id}')" class="text-blue-600 hover:bg-blue-50 px-2 py-1 rounded text-xs mr-1 transition">修改</button>
+                                <button onclick="deleteOrder('${doc.id}')" class="text-red-600 hover:bg-red-50 px-2 py-1 rounded text-xs transition">刪除</button>
+                            </td>
+                        </tr>
+                    `;
                 }
             }
         });
-
-        // ==========================================
-        // 核心更新：報表專屬的「出發時間 (由 1 號排到月底)」字串比對排序
-        // ==========================================
-        if (window.currentTab === 'report') {
-            reportRows.sort((a, b) => {
-                const dateA = a.data.departure_time || "";
-                const dateB = b.data.departure_time || "";
-                return dateA.localeCompare(dateB); 
-            });
-
-            reportRows.forEach(doc => {
-                const data = doc.data;
-                const statusStr = data.status === 'completed' ? '<span class="text-emerald-600 font-bold">✅ 已完成</span>' : '<span class="text-yellow-600 font-bold">⏳ 未完成</span>';
-                const modeMap = { Mode_A: "自營", Mode_B: "轉出", Mode_C: "轉入" };
-                
-                const cleanNote = (data.note || '無備註').replace(/"/g, '&quot;');
-                const cleanSpecial = data.special_info ? `\n\n⚠️ 特殊資訊：\n${data.special_info}`.replace(/"/g, '&quot;') : '';
-                const hoverText = `📝 行程與金流備註：\n------------------------\n${cleanNote}${cleanSpecial}`;
-
-                const unitTableDisplay = data.unit_price ? `<br><span class="text-[10px] text-blue-500 font-bold block leading-tight mt-1">${data.unit_price} × ${data.pax}</span>` : '';
-
-                document.getElementById('report-table-body').innerHTML += `
-                    <tr class="hover:bg-slate-50 border-b border-slate-200 transition cursor-help" title="${hoverText}">
-                        <td class="p-3">${statusStr}</td>
-                        <td class="p-3">${modeMap[data.mode]}</td>
-                        <td class="p-3 font-bold">
-                            ${data.customer} <span class="text-xs text-slate-400">(${data.pax}人)</span>
-                            <div class="mt-1 no-print">
-                                <span class="inline-flex items-center text-[10px] bg-blue-50 text-blue-600 border border-blue-200 px-1.5 py-0.5 rounded shadow-sm">
-                                    💬 停駐看備註
-                                </span>
-                            </div>
-                        </td>
-                        <td class="p-3 text-orange-600 font-bold text-xs">${data.departure_time || '-'}</td>
-                        <td class="p-3 text-right">
-                            <span class="font-bold text-slate-800 text-sm">A$ ${data.aud}</span>
-                            ${unitTableDisplay}
-                            <p class="text-xs text-slate-500 font-normal mt-1">NT$ ${data.twd.toLocaleString()}</p>
-                        </td>
-                        <td class="p-3 text-center no-print">
-                            <button onclick="editOrder('${doc.id}')" class="text-blue-600 hover:bg-blue-50 px-2 py-1 rounded text-xs mr-1 transition">修改</button>
-                            <button onclick="deleteOrder('${doc.id}')" class="text-red-600 hover:bg-red-50 px-2 py-1 rounded text-xs transition">刪除</button>
-                        </td>
-                    </tr>
-                `;
-            });
-        }
 
         if (document.getElementById('rep-total-count')) {
             document.getElementById('rep-total-count').innerText = reportCount;
@@ -690,8 +669,7 @@ const firebaseConfig = {
             window.scrollTo({ top: 0, behavior: 'smooth' });
         };
 
-        // Firebase 監聽器
-        const q = firestoreRef.query(firestoreRef.collection(db, "orders"), firestoreRef.orderBy("timestamp", "desc"));
+        const q = firestoreRef.query(firestoreRef.collection(db, "orders")); // 移除由資料庫進行的時間戳排序
         firestoreRef.onSnapshot(q, (snapshot) => {
             window.allOrders = [];
             snapshot.forEach(doc => window.allOrders.push({ id: doc.id, data: doc.data() }));
