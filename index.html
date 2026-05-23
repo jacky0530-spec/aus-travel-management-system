@@ -159,6 +159,7 @@
     <main id="view-report" class="view-section hidden">
         <div class="flex flex-wrap gap-3 mb-4 items-center bg-white p-4 rounded-xl border border-slate-200 shadow-sm no-print">
             <h3 class="font-bold text-slate-800 mr-4">⚙️ 報表設定</h3>
+            
             <select id="reportTimeType" class="p-2 border border-slate-300 rounded text-sm bg-slate-50" onchange="toggleDateInputs(); updateReportHeader(); renderUI()">
                 <option value="all">顯示全部出發時間</option>
                 <option value="month">📅 出發月報表</option>
@@ -167,11 +168,19 @@
             <input type="month" id="monthPicker" class="hidden p-2 border border-slate-300 rounded text-sm" onchange="updateReportHeader(); renderUI()">
             <input type="date" id="datePicker" class="hidden p-2 border border-slate-300 rounded text-sm" onchange="updateReportHeader(); renderUI()">
             
-            <select id="reportFilter" class="p-2 border border-slate-300 rounded text-sm bg-slate-50 ml-auto" onchange="renderUI()">
+            <select id="reportModeFilter" class="p-2 border border-slate-300 rounded text-sm bg-slate-50 ml-auto" onchange="renderUI()">
+                <option value="all">模式：全部</option>
+                <option value="Mode_A">📦 自營接單 (A)</option>
+                <option value="Mode_B">📤 轉給同業 (B)</option>
+                <option value="Mode_C">📥 同業轉入 (C)</option>
+            </select>
+
+            <select id="reportFilter" class="p-2 border border-slate-300 rounded text-sm bg-slate-50" onchange="renderUI()">
                 <option value="all">結案狀態：全部</option>
                 <option value="open">⏳ 只顯示未結案</option>
                 <option value="closed">📁 只顯示已結案</option>
             </select>
+
             <button onclick="window.print()" class="px-4 py-2 border border-slate-800 text-slate-800 font-bold rounded hover:bg-slate-100 text-sm transition">🖨️ 列印</button>
             <button onclick="exportToImage()" class="px-4 py-2 bg-blue-600 text-white font-bold rounded hover:bg-blue-700 text-sm transition">📸 下載圖片</button>
         </div>
@@ -351,7 +360,6 @@
         document.getElementById('rawOrderText').value = '';
         document.getElementById('departureTime').value = window.getTodayFormatted(); 
         
-        // 恢復預設狀態
         document.getElementById('cost').value = '0';
         document.getElementById('paymentStatus').value = 'unpaid';
         document.getElementById('caseStatus').value = 'open';
@@ -483,7 +491,7 @@
             currency: currencyVal,
             unit_price: unitVal, 
             amount: amountVal,
-            aud: amountVal, // 向下相容
+            aud: amountVal,
             fx_rate: fxVal,
             twd: twdVal,
             cost: costVal,
@@ -492,6 +500,7 @@
             departure_time: document.getElementById('departureTime').value, 
             note: document.getElementById('note').value,
             special_info: document.getElementById('specialInfo').value,
+            status: 'completed', // 保留舊的status避免錯誤，主要使用雙狀態
             timestamp: currentTimestamp 
         };
 
@@ -517,14 +526,15 @@
     // ==========================================
     // 第二部分：Firebase 與畫面渲染引擎
     // ==========================================
-    const firebaseConfig = {
-        apiKey: "請填寫",
-        authDomain: "請填寫",
-        projectId: "請填寫",
-        storageBucket: "請填寫",
-        messagingSenderId: "請填寫",
-        appId: "請填寫"
-    };
+const firebaseConfig = {
+  apiKey: "AIzaSyCBKoPGs0TW6VI1Ws3-61USpjARQR-O8Mc",
+  authDomain: "aus-travel-system.firebaseapp.com",
+  projectId: "aus-travel-system",
+  storageBucket: "aus-travel-system.firebasestorage.app",
+  messagingSenderId: "733398393106",
+  appId: "1:733398393106:web:370b0717ef760be29953cb",
+  measurementId: "G-2CPJ8HH5PC"
+};
 
     let db;
     let firestoreRef; 
@@ -540,7 +550,6 @@
     const generateCardHTML = (doc) => {
         const data = doc.data;
         
-        // 核心更新：雙狀態相容處理 (包含處理舊資料)
         const isPaid = (data.payment_status === 'paid') || (!data.payment_status && data.status === 'completed');
         const isClosed = (data.case_status === 'closed') || (!data.case_status && data.status === 'completed');
         
@@ -610,6 +619,8 @@
         
         const reportStatus = document.getElementById('reportFilter') ? document.getElementById('reportFilter').value : 'all';
         const reportTimeType = document.getElementById('reportTimeType') ? document.getElementById('reportTimeType').value : 'all';
+        const reportMode = document.getElementById('reportModeFilter') ? document.getElementById('reportModeFilter').value : 'all';
+        
         const targetMonth = document.getElementById('monthPicker') ? document.getElementById('monthPicker').value : '';
         const targetDate = document.getElementById('datePicker') ? document.getElementById('datePicker').value : '';
 
@@ -631,6 +642,7 @@
                 const isClosed = (data.case_status === 'closed') || (!data.case_status && data.status === 'completed');
                 
                 const passStatus = (reportStatus === 'all') || (reportStatus === 'open' && !isClosed) || (reportStatus === 'closed' && isClosed);
+                const passMode = (reportMode === 'all') || (data.mode === reportMode);
                 
                 let passTime = true;
                 if (reportTimeType !== 'all') {
@@ -648,7 +660,7 @@
                     }
                 }
 
-                if (passStatus && passTime) {
+                if (passStatus && passTime && passMode) {
                     reportCount++;
                     if (isPaid) totalPaid += (data.twd || 0);
                     else totalUnpaid += (data.twd || 0);
@@ -748,7 +760,6 @@
             if (confirm('確定要刪除這筆訂單嗎？')) firestoreRef.deleteDoc(firestoreRef.doc(db, "orders", id));
         };
 
-        // 獨立的狀態切換功能 (直接在卡片上點擊)
         window.togglePayment = (id, currentStatus) => {
             const newStatus = currentStatus === 'paid' ? 'unpaid' : 'paid';
             firestoreRef.updateDoc(firestoreRef.doc(db, "orders", id), { payment_status: newStatus });
@@ -778,7 +789,6 @@
             document.getElementById('pax').value = data.pax || 1;
             document.getElementById('amount').value = data.amount || data.aud || '';
             
-            // 讀取新的成本與狀態 (相容舊版資料)
             document.getElementById('cost').value = data.cost || '0';
             document.getElementById('paymentStatus').value = data.payment_status || (data.status === 'completed' ? 'paid' : 'unpaid');
             document.getElementById('caseStatus').value = data.case_status || (data.status === 'completed' ? 'closed' : 'open');
