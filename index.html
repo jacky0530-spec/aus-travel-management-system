@@ -71,7 +71,6 @@
                     <input type="text" id="departureTime" placeholder="YYYY-MM-DD" class="mt-1 block w-full p-2 border border-slate-300 rounded-md bg-yellow-50 focus:bg-white text-sm font-bold text-slate-800">
                 </div>
                 
-                <!-- 核心升級：加入幣別選單與重新排列排版 -->
                 <div class="md:col-span-2">
                     <label class="block text-xs font-medium text-slate-700">幣別</label>
                     <select id="currency" class="mt-1 block w-full p-2 border border-slate-300 rounded-md bg-slate-50 text-sm font-bold text-blue-700" onchange="handleCurrencyChange()">
@@ -82,20 +81,38 @@
                 </div>
                 <div class="md:col-span-2">
                     <label class="block text-xs font-medium text-slate-700">單價</label>
-                    <input type="number" step="0.01" id="unitPrice" placeholder="單價 (自動算)" class="mt-1 block w-full p-2 border border-slate-300 rounded-md text-sm">
+                    <input type="number" step="0.01" id="unitPrice" placeholder="有單價會自動乘" class="mt-1 block w-full p-2 border border-slate-300 rounded-md text-sm">
                 </div>
                 <div class="md:col-span-1">
-                    <label class="block text-xs font-medium text-slate-700">人數</label>
+                    <label class="block text-xs font-medium text-slate-700">人數 (Pax)</label>
                     <input type="number" id="pax" value="1" min="1" class="mt-1 block w-full p-2 border border-slate-300 rounded-md text-sm" required>
                 </div>
                 <div class="md:col-span-2">
                     <label class="block text-xs font-medium text-slate-700">總額</label>
-                    <!-- ID 改為 amount 比較符合多幣別概念 -->
                     <input type="number" step="0.01" id="amount" class="mt-1 block w-full p-2 border border-blue-400 bg-blue-50 font-bold rounded-md text-sm" required>
                 </div>
                 <div class="md:col-span-1">
                     <label class="block text-xs font-medium text-slate-700">匯率</label>
                     <input type="number" step="0.001" id="fxRate" value="23" class="mt-1 block w-full p-2 border border-slate-300 rounded-md text-sm" required>
+                </div>
+
+                <div class="md:col-span-2">
+                    <label class="block text-xs font-medium text-slate-700">成本 (預設0)</label>
+                    <input type="number" step="0.01" id="cost" value="0" class="mt-1 block w-full p-2 border border-red-300 bg-red-50 text-red-700 font-bold rounded-md text-sm" required>
+                </div>
+                <div class="md:col-span-3">
+                    <label class="block text-xs font-medium text-slate-700">收款狀態</label>
+                    <select id="paymentStatus" class="mt-1 block w-full p-2 border border-slate-300 rounded-md bg-slate-50 text-sm" required>
+                        <option value="unpaid">❌ 未收款 (Pending)</option>
+                        <option value="paid">✅ 已收款 (Paid)</option>
+                    </select>
+                </div>
+                <div class="md:col-span-3">
+                    <label class="block text-xs font-medium text-slate-700">結案狀態</label>
+                    <select id="caseStatus" class="mt-1 block w-full p-2 border border-slate-300 rounded-md bg-slate-50 text-sm" required>
+                        <option value="open">⏳ 未結案 (Open)</option>
+                        <option value="closed">📁 已結案 (Closed)</option>
+                    </select>
                 </div>
 
                 <div class="md:col-span-5">
@@ -151,9 +168,9 @@
             <input type="date" id="datePicker" class="hidden p-2 border border-slate-300 rounded text-sm" onchange="updateReportHeader(); renderUI()">
             
             <select id="reportFilter" class="p-2 border border-slate-300 rounded text-sm bg-slate-50 ml-auto" onchange="renderUI()">
-                <option value="all">訂單狀態：全部</option>
-                <option value="pending">⏳ 只顯示未完成</option>
-                <option value="completed">✅ 只顯示已完成</option>
+                <option value="all">結案狀態：全部</option>
+                <option value="open">⏳ 只顯示未結案</option>
+                <option value="closed">📁 只顯示已結案</option>
             </select>
             <button onclick="window.print()" class="px-4 py-2 border border-slate-800 text-slate-800 font-bold rounded hover:bg-slate-100 text-sm transition">🖨️ 列印</button>
             <button onclick="exportToImage()" class="px-4 py-2 bg-blue-600 text-white font-bold rounded hover:bg-blue-700 text-sm transition">📸 下載圖片</button>
@@ -164,16 +181,16 @@
             
             <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
                 <div class="bg-slate-50 p-5 rounded-xl border border-slate-200 border-l-4 border-l-blue-500">
-                    <p class="text-sm text-slate-500 mb-1">符合出發條件訂單數</p>
+                    <p class="text-sm text-slate-500 mb-1">符合條件訂單數</p>
                     <h3 class="text-3xl font-bold text-slate-800" id="rep-total-count">0</h3>
                 </div>
-                <div class="bg-slate-50 p-5 rounded-xl border border-slate-200 border-l-4 border-l-yellow-500">
-                    <p class="text-sm text-slate-500 mb-1">⏳ 未完成總額</p>
-                    <h3 class="text-3xl font-bold text-yellow-600" id="rep-pending-sum">NT$ 0</h3>
+                <div class="bg-slate-50 p-5 rounded-xl border border-slate-200 border-l-4 border-l-red-500">
+                    <p class="text-sm text-slate-500 mb-1">❌ 未收款總額</p>
+                    <h3 class="text-3xl font-bold text-red-600" id="rep-unpaid-sum">NT$ 0</h3>
                 </div>
                 <div class="bg-slate-50 p-5 rounded-xl border border-slate-200 border-l-4 border-l-emerald-500">
-                    <p class="text-sm text-slate-500 mb-1">✅ 已完成總額</p>
-                    <h3 class="text-3xl font-bold text-emerald-600" id="rep-completed-sum">NT$ 0</h3>
+                    <p class="text-sm text-slate-500 mb-1">✅ 已收款總額</p>
+                    <h3 class="text-3xl font-bold text-emerald-600" id="rep-paid-sum">NT$ 0</h3>
                 </div>
             </div>
 
@@ -181,11 +198,11 @@
                 <table class="w-full text-left border-collapse text-sm">
                     <thead>
                         <tr class="bg-slate-800 text-white">
-                            <th class="p-3">狀態</th>
+                            <th class="p-3">雙狀態</th>
                             <th class="p-3">模式</th>
                             <th class="p-3">姓名/單號</th>
                             <th class="p-3">出發時間</th>
-                            <th class="p-3 text-right">金額明細</th>
+                            <th class="p-3 text-right">金額明細 (含成本)</th>
                             <th class="p-3 text-center no-print">操作</th>
                         </tr>
                     </thead>
@@ -204,8 +221,15 @@
                 <p><strong>姓名/單號：</strong> <span id="modalCustomer"></span></p>
                 <p><strong>單價與人數：</strong> <span id="modalUnitPax" class="font-bold text-blue-600"></span></p>
                 <p><strong>出發時間：</strong> ⏰ <span id="modalDeparture" class="font-bold text-orange-600"></span></p>
-                <p><strong>輸入總額：</strong> <span id="modalAmount" class="font-bold text-lg"></span></p>
+                <div class="flex space-x-4">
+                    <p><strong>總額：</strong> <span id="modalAmount" class="font-bold text-lg"></span></p>
+                    <p class="text-red-600"><strong>成本：</strong> <span id="modalCost" class="font-bold text-lg"></span></p>
+                </div>
                 <p><strong>折合台幣：</strong> NT$ <span id="modalTwd" class="font-bold text-emerald-600 text-lg"></span></p>
+                <div class="flex space-x-4 mt-2">
+                    <p><strong>收款：</strong> <span id="modalPaymentStatus"></span></p>
+                    <p><strong>結案：</strong> <span id="modalCaseStatus"></span></p>
+                </div>
                 <div class="bg-slate-100 p-2 rounded text-xs whitespace-pre-wrap max-h-24 overflow-y-auto mt-2" id="modalNote"></div>
             </div>
             <div class="mt-6 flex justify-end space-x-3">
@@ -229,21 +253,12 @@
 
     document.getElementById('departureTime').value = window.getTodayFormatted();
 
-    // 核心功能：當選擇不同幣別時，自動設定對應匯率
     window.handleCurrencyChange = () => {
         const curr = document.getElementById('currency').value;
         const fxInput = document.getElementById('fxRate');
-        
-        if (curr === 'AUD') {
-            fxInput.value = 23;
-            fxInput.disabled = false;
-        } else if (curr === 'CNY') {
-            fxInput.value = 4.65;
-            fxInput.disabled = false;
-        } else if (curr === 'TWD') {
-            fxInput.value = 1;
-            fxInput.disabled = true; // 台幣防呆，不讓改匯率
-        }
+        if (curr === 'AUD') { fxInput.value = 23; fxInput.disabled = false; } 
+        else if (curr === 'CNY') { fxInput.value = 4.65; fxInput.disabled = false; } 
+        else if (curr === 'TWD') { fxInput.value = 1; fxInput.disabled = true; }
         calculateTotal();
     };
 
@@ -264,18 +279,15 @@
         document.querySelectorAll('.view-section').forEach(view => view.classList.add('hidden'));
 
         const inputSec = document.getElementById('inputSection');
-        if (tabName === 'report') {
-            inputSec.classList.add('hidden');
-        } else {
+        if (tabName === 'report') inputSec.classList.add('hidden');
+        else {
             inputSec.classList.remove('hidden');
             if (['Mode_A', 'Mode_B', 'Mode_C'].includes(tabName)) document.getElementById('mode').value = tabName;
         }
 
-        if (tabName === 'dashboard') {
-            document.getElementById('view-dashboard').classList.remove('hidden');
-        } else if (tabName === 'report') {
-            document.getElementById('view-report').classList.remove('hidden');
-        } else {
+        if (tabName === 'dashboard') document.getElementById('view-dashboard').classList.remove('hidden');
+        else if (tabName === 'report') document.getElementById('view-report').classList.remove('hidden');
+        else {
             document.getElementById('view-single-mode').classList.remove('hidden');
             const titles = { Mode_A: "📦 自營接單 (A)", Mode_B: "📤 轉給同業 (B)", Mode_C: "📥 同業轉入 (C)" };
             document.getElementById('single-mode-title').innerText = titles[tabName];
@@ -288,7 +300,6 @@
         const mp = document.getElementById('monthPicker').value;
         const dp = document.getElementById('datePicker').value;
         const header = document.getElementById('reportHeaderTitle');
-        
         if (type === 'all') header.innerText = "澳洲旅遊業務出發報表 (全部出發時間)";
         else if (type === 'month') header.innerText = `澳洲旅遊業務出發月報表 (${mp})`;
         else if (type === 'day') header.innerText = `澳洲旅遊業務出發日報表 (${dp})`;
@@ -305,7 +316,6 @@
         const yyyy = today.getFullYear();
         const mm = String(today.getMonth() + 1).padStart(2, '0');
         const dd = String(today.getDate()).padStart(2, '0');
-        
         if(type === 'month' && !mp.value) mp.value = `${yyyy}-${mm}`;
         if(type === 'day' && !dp.value) dp.value = `${yyyy}-${mm}-${dd}`;
     };
@@ -335,12 +345,17 @@
         window.currentEditId = null;
         document.getElementById('orderForm').reset();
         
-        // 恢復預設值
         document.getElementById('currency').value = 'AUD';
-        window.handleCurrencyChange(); // 會自動將 fxRate 設回 23
+        window.handleCurrencyChange();
         
         document.getElementById('rawOrderText').value = '';
         document.getElementById('departureTime').value = window.getTodayFormatted(); 
+        
+        // 恢復預設狀態
+        document.getElementById('cost').value = '0';
+        document.getElementById('paymentStatus').value = 'unpaid';
+        document.getElementById('caseStatus').value = 'open';
+
         if (['Mode_A', 'Mode_B', 'Mode_C'].includes(window.currentTab)) document.getElementById('mode').value = window.currentTab;
 
         const formTitle = document.getElementById('formTitle');
@@ -361,14 +376,13 @@
 
         let mode = document.getElementById('mode').value; 
         let customer = ''; let amount = ''; let special = ''; let pax = 1; let note = ''; let departureTime = window.getTodayFormatted(); let unitPrice = '';
-        let currency = 'AUD'; // 預設澳幣
+        let currency = 'AUD';
         
         const upperText = rawText.toUpperCase();
         if (upperText.includes("FLIGGY") || upperText.includes("LITTLE FOX")) mode = 'Mode_B'; 
         if (rawText.includes("第三方平台") || rawText.includes("更改者資料")) mode = 'Mode_C'; 
         if (rawText.includes("我的預訂網站")) mode = 'Mode_A';
 
-        // 智慧偵測幣別
         if (upperText.includes("RMB") || upperText.includes("人民幣") || rawText.includes("¥")) currency = 'CNY';
         if (upperText.includes("NT$") || upperText.includes("TWD") || upperText.includes("台幣")) currency = 'TWD';
 
@@ -389,7 +403,6 @@
 
         note = notesArr.length > 0 ? notesArr.join("\n") : "自動解析匯入";
 
-        // 解析單價、人數、總額 (相容多幣別符號)
         const unitPaxMatch = rawText.match(/(?:A\$|\$|¥|RMB|NT\$|人民幣)\s*([0-9.]+)\s*[xX×*]\s*(\d+)/);
         if (unitPaxMatch) {
             unitPrice = unitPaxMatch[1];
@@ -428,12 +441,10 @@
         const weightMatch = rawText.match(/(\d{2,3}kg)/i);
         if (weightMatch) special += weightMatch[1] + " ";
 
-        // 更新表單UI
         document.getElementById('mode').value = mode;
         if(customer) document.getElementById('customer').value = customer;
         document.getElementById('pax').value = pax;
         
-        // 切換幣別並觸發匯率改變
         document.getElementById('currency').value = currency;
         window.handleCurrencyChange();
 
@@ -457,9 +468,12 @@
         const amountVal = parseFloat(document.getElementById('amount').value) || 0;
         const fxVal = parseFloat(document.getElementById('fxRate').value) || 1;
         const twdVal = Math.round(amountVal * fxVal) || 0;
+        
+        const costVal = parseFloat(document.getElementById('cost').value) || 0;
+        const paymentStatusVal = document.getElementById('paymentStatus').value;
+        const caseStatusVal = document.getElementById('caseStatus').value;
 
         const existingOrder = window.currentEditId ? window.allOrders.find(o => o.id === window.currentEditId) : null;
-        const currentStatus = existingOrder ? existingOrder.data.status : "pending";
         const currentTimestamp = existingOrder ? existingOrder.data.timestamp : new Date();
 
         pendingData = {
@@ -469,13 +483,15 @@
             currency: currencyVal,
             unit_price: unitVal, 
             amount: amountVal,
-            aud: amountVal, // 為了向下相容保留的欄位
+            aud: amountVal, // 向下相容
             fx_rate: fxVal,
             twd: twdVal,
+            cost: costVal,
+            payment_status: paymentStatusVal,
+            case_status: caseStatusVal,
             departure_time: document.getElementById('departureTime').value, 
             note: document.getElementById('note').value,
             special_info: document.getElementById('specialInfo').value,
-            status: currentStatus,
             timestamp: currentTimestamp 
         };
 
@@ -486,7 +502,10 @@
         document.getElementById('modalCustomer').innerText = pendingData.customer;
         document.getElementById('modalUnitPax').innerText = unitVal ? `單價 ${currSymbol} ${unitVal} × ${paxVal} 人` : `${paxVal} 人`;
         document.getElementById('modalAmount').innerText = `${currSymbol} ${amountVal}`;
+        document.getElementById('modalCost').innerText = `${currSymbol} ${costVal}`;
         document.getElementById('modalTwd').innerText = pendingData.twd.toLocaleString();
+        document.getElementById('modalPaymentStatus').innerText = paymentStatusVal === 'paid' ? '✅ 已收款' : '❌ 未收款';
+        document.getElementById('modalCaseStatus').innerText = caseStatusVal === 'closed' ? '📁 已結案' : '⏳ 未結案';
         document.getElementById('modalDeparture').innerText = pendingData.departure_time || '未指定';
         document.getElementById('modalNote').innerText = pendingData.note;
 
@@ -498,15 +517,15 @@
     // ==========================================
     // 第二部分：Firebase 與畫面渲染引擎
     // ==========================================
-const firebaseConfig = {
-  apiKey: "AIzaSyCBKoPGs0TW6VI1Ws3-61USpjARQR-O8Mc",
-  authDomain: "aus-travel-system.firebaseapp.com",
-  projectId: "aus-travel-system",
-  storageBucket: "aus-travel-system.firebasestorage.app",
-  messagingSenderId: "733398393106",
-  appId: "1:733398393106:web:370b0717ef760be29953cb",
-  measurementId: "G-2CPJ8HH5PC"
-};
+    const firebaseConfig = {
+        apiKey: "請填寫",
+        authDomain: "請填寫",
+        projectId: "請填寫",
+        storageBucket: "請填寫",
+        messagingSenderId: "請填寫",
+        appId: "請填寫"
+    };
+
     let db;
     let firestoreRef; 
 
@@ -520,38 +539,55 @@ const firebaseConfig = {
 
     const generateCardHTML = (doc) => {
         const data = doc.data;
-        const isCompleted = data.status === 'completed';
-        const statusBadge = isCompleted 
-            ? `<span class="bg-emerald-100 text-emerald-800 text-xs px-2 py-0.5 rounded mr-2">✅ 已完成</span>` 
-            : `<span class="bg-yellow-100 text-yellow-800 text-xs px-2 py-0.5 rounded mr-2">⏳ 未完成</span>`;
-        const paxDisplay = data.pax ? `<span class="bg-blue-100 text-blue-800 text-xs px-2 py-0.5 rounded">👤 ${data.pax}</span>` : '';
+        
+        // 核心更新：雙狀態相容處理 (包含處理舊資料)
+        const isPaid = (data.payment_status === 'paid') || (!data.payment_status && data.status === 'completed');
+        const isClosed = (data.case_status === 'closed') || (!data.case_status && data.status === 'completed');
+        
+        const paymentBadge = isPaid 
+            ? `<span class="bg-emerald-100 text-emerald-800 text-xs px-2 py-0.5 rounded mr-1 shadow-sm">✅ 已收款</span>` 
+            : `<span class="bg-red-100 text-red-800 text-xs px-2 py-0.5 rounded mr-1 shadow-sm">❌ 未收款</span>`;
+            
+        const caseBadge = isClosed 
+            ? `<span class="bg-blue-100 text-blue-800 text-xs px-2 py-0.5 rounded mr-2 shadow-sm">📁 已結案</span>` 
+            : `<span class="bg-yellow-100 text-yellow-800 text-xs px-2 py-0.5 rounded mr-2 shadow-sm">⏳ 未結案</span>`;
+            
+        const paxDisplay = data.pax ? `<span class="bg-slate-200 text-slate-700 font-bold text-xs px-2 py-0.5 rounded">👤 ${data.pax}</span>` : '';
         const timeDisplay = data.departure_time ? `<p class="text-sm font-bold text-orange-600 mt-1">⏰ 出發：${data.departure_time}</p>` : '';
         
-        // 多幣別符號與金額處理 (向下相容舊資料)
         const currType = data.currency || 'AUD';
         const sym = { AUD: 'A$', CNY: '¥', TWD: 'NT$' }[currType] || 'A$';
         const displayAmount = data.amount || data.aud || 0;
+        const displayCost = data.cost || 0;
         
-        const unitDisplay = data.unit_price ? `<span class="text-[10px] font-bold text-blue-500 block leading-tight mb-1">${sym} ${data.unit_price} × ${data.pax}</span>` : '';
+        const unitDisplay = data.unit_price ? `<span class="text-[10px] font-bold text-blue-500 block leading-tight mb-0.5">${sym} ${data.unit_price} × ${data.pax}</span>` : '';
 
         return `
-            <div class="order-card p-4 bg-white rounded-lg border border-slate-200 hover:border-blue-300 transition shadow-sm relative group">
-                <div class="action-btns absolute top-2 right-2 bg-white/90 p-1 rounded shadow flex space-x-1 z-10 border border-slate-200">
-                    <button onclick="toggleStatus('${doc.id}', '${data.status}')" title="切換狀態" class="text-slate-600 hover:text-emerald-600 px-1 text-sm">${isCompleted ? '🔙 標為未完' : '✅ 標為完成'}</button>
-                    <button onclick="editOrder('${doc.id}')" title="修改" class="text-blue-600 hover:text-blue-800 px-1 text-sm">✏️</button>
-                    <button onclick="deleteOrder('${doc.id}')" title="刪除" class="text-red-600 hover:text-red-800 px-1 text-sm">🗑️</button>
+            <div class="order-card p-4 bg-white rounded-lg border border-slate-200 hover:border-blue-400 transition shadow-sm relative group">
+                <div class="action-btns absolute top-2 right-2 bg-white/95 p-1.5 rounded-lg shadow-md flex space-x-2 z-10 border border-slate-200">
+                    <button onclick="togglePayment('${doc.id}', '${isPaid ? 'paid' : 'unpaid'}')" title="切換收款狀態" class="text-slate-600 hover:text-emerald-600 text-xs font-bold transition">💲收款</button>
+                    <button onclick="toggleCase('${doc.id}', '${isClosed ? 'closed' : 'open'}')" title="切換結案狀態" class="text-slate-600 hover:text-blue-600 text-xs font-bold transition">📁結案</button>
+                    <button onclick="editOrder('${doc.id}')" title="修改" class="text-slate-400 hover:text-orange-500 transition">✏️</button>
+                    <button onclick="deleteOrder('${doc.id}')" title="刪除" class="text-slate-400 hover:text-red-500 transition">🗑️</button>
                 </div>
-                <div class="flex items-center mb-1 pr-24">${statusBadge} ${paxDisplay}</div>
-                <p class="font-bold text-base text-slate-800">${data.customer}</p>
+                
+                <div class="flex items-center mb-2 pr-32 flex-wrap gap-y-1">${paymentBadge} ${caseBadge} ${paxDisplay}</div>
+                
+                <p class="font-bold text-base text-slate-800 leading-tight">${data.customer}</p>
                 ${timeDisplay}
+                
                 <div class="bg-slate-50 border border-slate-100 rounded p-2 mt-2 max-h-20 overflow-y-auto text-xs text-slate-600 whitespace-pre-wrap">${data.note}</div>
                 <p class="text-xs text-red-500 mt-1 font-bold">${data.special_info || ''}</p>
+                
                 <div class="flex justify-between items-end mt-3 border-t border-slate-100 pt-2">
-                    <span class="text-xs text-slate-400">匯率 ${data.fx_rate} </span>
+                    <div class="text-left">
+                        <span class="text-[10px] text-slate-400 block mb-0.5">匯率 ${data.fx_rate} </span>
+                        <span class="text-xs text-red-500 font-bold bg-red-50 px-1.5 py-0.5 rounded border border-red-100">成本: ${sym} ${displayCost}</span>
+                    </div>
                     <div class="text-right">
                         ${unitDisplay}
-                        <span class="font-bold text-slate-800 text-sm">${sym} ${displayAmount}</span>
-                        <p class="text-xs text-slate-500 font-bold">NT$ ${data.twd.toLocaleString()}</p>
+                        <span class="font-bold text-slate-800 text-base">${sym} ${displayAmount}</span>
+                        <p class="text-[11px] text-slate-500 font-bold">NT$ ${data.twd.toLocaleString()}</p>
                     </div>
                 </div>
             </div>
@@ -568,8 +604,8 @@ const firebaseConfig = {
         window.allOrders.sort((a, b) => getTimestampMs(b.data.timestamp) - getTimestampMs(a.data.timestamp));
 
         let reportCount = 0;
-        let totalPending = 0;
-        let totalCompleted = 0;
+        let totalUnpaid = 0;
+        let totalPaid = 0;
         let reportRows = []; 
         
         const reportStatus = document.getElementById('reportFilter') ? document.getElementById('reportFilter').value : 'all';
@@ -591,9 +627,12 @@ const firebaseConfig = {
             }
 
             if (window.currentTab === 'report') {
-                const passStatus = (reportStatus === 'all') || (data.status === reportStatus);
-                let passTime = true;
+                const isPaid = (data.payment_status === 'paid') || (!data.payment_status && data.status === 'completed');
+                const isClosed = (data.case_status === 'closed') || (!data.case_status && data.status === 'completed');
                 
+                const passStatus = (reportStatus === 'all') || (reportStatus === 'open' && !isClosed) || (reportStatus === 'closed' && isClosed);
+                
+                let passTime = true;
                 if (reportTimeType !== 'all') {
                     const dep = data.departure_time || "";
                     if (reportTimeType === 'month' && targetMonth) {
@@ -611,8 +650,8 @@ const firebaseConfig = {
 
                 if (passStatus && passTime) {
                     reportCount++;
-                    if (data.status === 'completed') totalCompleted += (data.twd || 0);
-                    else totalPending += (data.twd || 0);
+                    if (isPaid) totalPaid += (data.twd || 0);
+                    else totalUnpaid += (data.twd || 0);
                     reportRows.push(doc);
                 }
             }
@@ -627,25 +666,31 @@ const firebaseConfig = {
 
             reportRows.forEach(doc => {
                 const data = doc.data;
-                const statusStr = data.status === 'completed' ? '<span class="text-emerald-600 font-bold">✅ 已完成</span>' : '<span class="text-yellow-600 font-bold">⏳ 未完成</span>';
+                const isPaid = (data.payment_status === 'paid') || (!data.payment_status && data.status === 'completed');
+                const isClosed = (data.case_status === 'closed') || (!data.case_status && data.status === 'completed');
+                
+                const paymentStr = isPaid ? '<span class="text-emerald-600 font-bold block mb-1 text-[11px]">✅ 已收款</span>' : '<span class="text-red-500 font-bold block mb-1 text-[11px]">❌ 未收款</span>';
+                const caseStr = isClosed ? '<span class="text-blue-600 font-bold block text-[11px]">📁 已結案</span>' : '<span class="text-yellow-600 font-bold block text-[11px]">⏳ 未結案</span>';
+                
                 const modeMap = { Mode_A: "自營", Mode_B: "轉出", Mode_C: "轉入" };
                 
                 const currType = data.currency || 'AUD';
                 const sym = { AUD: 'A$', CNY: '¥', TWD: 'NT$' }[currType] || 'A$';
                 const displayAmount = data.amount || data.aud || 0;
+                const displayCost = data.cost || 0;
 
                 const cleanNote = (data.note || '無備註').replace(/"/g, '&quot;');
                 const cleanSpecial = data.special_info ? `\n\n⚠️ 特殊資訊：\n${data.special_info}`.replace(/"/g, '&quot;') : '';
                 const hoverText = `📝 行程與金流備註：\n------------------------\n${cleanNote}${cleanSpecial}`;
 
-                const unitTableDisplay = data.unit_price ? `<br><span class="text-[10px] text-blue-500 font-bold block leading-tight mt-1">${sym} ${data.unit_price} × ${data.pax}</span>` : '';
+                const unitTableDisplay = data.unit_price ? `<span class="text-[10px] text-blue-500 font-bold block leading-tight mt-1 mb-1">${sym} ${data.unit_price} × ${data.pax}</span>` : '';
 
                 document.getElementById('report-table-body').innerHTML += `
                     <tr class="hover:bg-slate-50 border-b border-slate-200 transition cursor-help" title="${hoverText}">
-                        <td class="p-3">${statusStr}</td>
-                        <td class="p-3">${modeMap[data.mode]}</td>
-                        <td class="p-3 font-bold">
-                            ${data.customer} <span class="text-xs text-slate-400">(${data.pax}人)</span>
+                        <td class="p-3 leading-tight">${paymentStr}${caseStr}</td>
+                        <td class="p-3 text-xs text-slate-500">${modeMap[data.mode]}</td>
+                        <td class="p-3 font-bold text-sm">
+                            ${data.customer} <span class="text-[10px] text-slate-400">(${data.pax}人)</span>
                             <div class="mt-1 no-print">
                                 <span class="inline-flex items-center text-[10px] bg-blue-50 text-blue-600 border border-blue-200 px-1.5 py-0.5 rounded shadow-sm">
                                     💬 停駐看備註
@@ -654,13 +699,14 @@ const firebaseConfig = {
                         </td>
                         <td class="p-3 text-orange-600 font-bold text-xs">${data.departure_time || '-'}</td>
                         <td class="p-3 text-right">
-                            <span class="font-bold text-slate-800 text-sm">${sym} ${displayAmount}</span>
+                            <span class="font-bold text-slate-800 text-sm block">${sym} ${displayAmount}</span>
                             ${unitTableDisplay}
-                            <p class="text-xs text-slate-500 font-normal mt-1">NT$ ${data.twd.toLocaleString()}</p>
+                            <span class="text-xs text-red-500 font-bold block">成本: ${sym} ${displayCost}</span>
+                            <p class="text-[10px] text-slate-500 font-normal mt-1 border-t border-slate-200 pt-1">NT$ ${data.twd.toLocaleString()}</p>
                         </td>
                         <td class="p-3 text-center no-print">
-                            <button onclick="editOrder('${doc.id}')" class="text-blue-600 hover:bg-blue-50 px-2 py-1 rounded text-xs mr-1 transition">修改</button>
-                            <button onclick="deleteOrder('${doc.id}')" class="text-red-600 hover:bg-red-50 px-2 py-1 rounded text-xs transition">刪除</button>
+                            <button onclick="editOrder('${doc.id}')" class="text-blue-600 hover:bg-blue-50 px-2 py-1 rounded text-xs mr-1 transition font-bold">修改</button>
+                            <button onclick="deleteOrder('${doc.id}')" class="text-red-500 hover:bg-red-50 px-2 py-1 rounded text-xs transition font-bold">刪除</button>
                         </td>
                     </tr>
                 `;
@@ -669,8 +715,8 @@ const firebaseConfig = {
 
         if (document.getElementById('rep-total-count')) {
             document.getElementById('rep-total-count').innerText = reportCount;
-            document.getElementById('rep-pending-sum').innerText = "NT$ " + totalPending.toLocaleString();
-            document.getElementById('rep-completed-sum').innerText = "NT$ " + totalCompleted.toLocaleString();
+            document.getElementById('rep-unpaid-sum').innerText = "NT$ " + totalUnpaid.toLocaleString();
+            document.getElementById('rep-paid-sum').innerText = "NT$ " + totalPaid.toLocaleString();
         }
     };
 
@@ -702,9 +748,15 @@ const firebaseConfig = {
             if (confirm('確定要刪除這筆訂單嗎？')) firestoreRef.deleteDoc(firestoreRef.doc(db, "orders", id));
         };
 
-        window.toggleStatus = (id, currentStatus) => {
-            const newStatus = currentStatus === 'completed' ? 'pending' : 'completed';
-            firestoreRef.updateDoc(firestoreRef.doc(db, "orders", id), { status: newStatus });
+        // 獨立的狀態切換功能 (直接在卡片上點擊)
+        window.togglePayment = (id, currentStatus) => {
+            const newStatus = currentStatus === 'paid' ? 'unpaid' : 'paid';
+            firestoreRef.updateDoc(firestoreRef.doc(db, "orders", id), { payment_status: newStatus });
+        };
+        
+        window.toggleCase = (id, currentStatus) => {
+            const newStatus = currentStatus === 'closed' ? 'open' : 'closed';
+            firestoreRef.updateDoc(firestoreRef.doc(db, "orders", id), { case_status: newStatus });
         };
 
         window.editOrder = (id) => {
@@ -716,17 +768,21 @@ const firebaseConfig = {
             document.getElementById('mode').value = data.mode;
             document.getElementById('customer').value = data.customer || '';
             
-            // 核心：編輯時恢復幣別與正確匯率
             const savedCurrency = data.currency || 'AUD';
             document.getElementById('currency').value = savedCurrency;
-            window.handleCurrencyChange(); // 會把 fxRate 變回預設 (23 或 4.65)
-            // 接著用資料庫裡的匯率覆寫回去 (確保如果當初是用特殊匯率存的，會原封不動還原)
+            window.handleCurrencyChange(); 
             document.getElementById('fxRate').value = data.fx_rate || 23; 
             document.getElementById('fxRate').disabled = (savedCurrency === 'TWD');
             
             document.getElementById('unitPrice').value = data.unit_price || ''; 
             document.getElementById('pax').value = data.pax || 1;
             document.getElementById('amount').value = data.amount || data.aud || '';
+            
+            // 讀取新的成本與狀態 (相容舊版資料)
+            document.getElementById('cost').value = data.cost || '0';
+            document.getElementById('paymentStatus').value = data.payment_status || (data.status === 'completed' ? 'paid' : 'unpaid');
+            document.getElementById('caseStatus').value = data.case_status || (data.status === 'completed' ? 'closed' : 'open');
+            
             document.getElementById('departureTime').value = data.departure_time || '';
             document.getElementById('note').value = data.note || '';
             document.getElementById('specialInfo').value = data.special_info || '';
