@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>澳洲旅遊調度與發票管理系統</title>
+    <title>澳洲旅遊調度與發票管理系統 - 安全版</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;700&display=swap" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
@@ -14,7 +14,6 @@
         .order-card .action-btns { opacity: 0; transition: opacity 0.2s; }
         .order-card:hover .action-btns { opacity: 1; }
         .nav-btn.active { border-bottom: 4px solid #2563eb; color: #1e40af; font-weight: bold; background-color: #eff6ff; }
-        
         @media print {
             .no-print { display: none !important; }
             body { background-color: white; padding: 0; }
@@ -25,268 +24,285 @@
         }
     </style>
 </head>
-<body class="p-6 max-w-7xl mx-auto relative text-slate-800">
+<body class="text-slate-800">
 
-    <header class="mb-6 flex justify-between items-end no-print">
-        <div>
-            <h1 class="text-3xl font-bold">澳洲旅遊業務總覽</h1>
-            <p class="text-slate-500 mt-1 text-sm font-bold" id="statusText">正在檢查系統狀態...</p>
-        </div>
-    </header>
-
-    <nav class="flex flex-wrap border-b border-slate-300 mb-6 bg-white rounded-t-lg overflow-hidden card-shadow no-print">
-        <button onclick="switchTab('dashboard')" id="tab-dashboard" class="nav-btn active flex-1 py-3 text-center text-slate-600 hover:bg-slate-50 transition min-w-[120px]">📊 首頁總覽</button>
-        <button onclick="switchTab('Mode_A')" id="tab-Mode_A" class="nav-btn flex-1 py-3 text-center text-slate-600 hover:bg-slate-50 transition min-w-[120px]">📦 自營接單 (A)</button>
-        <button onclick="switchTab('Mode_B')" id="tab-Mode_B" class="nav-btn flex-1 py-3 text-center text-slate-600 hover:bg-slate-50 transition min-w-[120px]">📤 轉給同業 (B)</button>
-        <button onclick="switchTab('Mode_C')" id="tab-Mode_C" class="nav-btn flex-1 py-3 text-center text-slate-600 hover:bg-slate-50 transition min-w-[120px]">📥 同業轉入 (C)</button>
-        <button onclick="switchTab('report')" id="tab-report" class="nav-btn flex-1 py-3 text-center text-slate-600 hover:bg-slate-50 transition min-w-[120px]">📈 出發報表</button>
-        <button onclick="switchTab('profit-loss')" id="tab-profit-loss" class="nav-btn flex-1 py-3 text-center text-slate-600 hover:bg-slate-50 transition min-w-[120px]">💰 損益報表</button>
-    </nav>
-
-    <div id="inputSection" class="no-print">
-        <section class="mb-6 bg-blue-50 p-5 rounded-xl border border-blue-200 shadow-sm">
-            <h2 class="text-base font-bold text-blue-800 mb-2">⚡ 智慧文字解析 (貼上 LINE 訂單)</h2>
-            <textarea id="rawOrderText" rows="3" class="w-full p-2 border border-blue-300 rounded-md text-sm focus:ring-blue-500" placeholder="在此貼上 LINE 群組的原始文字訂單..."></textarea>
-            <div class="mt-2 flex justify-end">
-                <button type="button" id="parseBtn" class="bg-blue-600 text-white px-5 py-1.5 rounded-lg font-bold text-sm hover:bg-blue-700 transition">自動解析欄位 ↓</button>
+    <div id="loginScreen" class="min-h-screen flex items-center justify-center bg-slate-800 absolute inset-0 z-50">
+        <div class="bg-white p-8 rounded-2xl shadow-2xl max-w-sm w-full">
+            <h2 class="text-2xl font-bold text-center text-slate-800 mb-6">🇦🇺 旅遊調度系統登入</h2>
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-slate-700">帳號 (Email)</label>
+                    <input type="email" id="loginEmail" class="mt-1 block w-full p-3 border border-slate-300 rounded-md focus:ring-blue-500 focus:border-blue-500">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-slate-700">密碼 (Password)</label>
+                    <input type="password" id="loginPassword" class="mt-1 block w-full p-3 border border-slate-300 rounded-md focus:ring-blue-500 focus:border-blue-500">
+                </div>
+                <div class="flex items-center mt-2">
+                    <input type="checkbox" id="rememberMe" class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-slate-300 rounded">
+                    <label for="rememberMe" class="ml-2 block text-sm text-slate-700 font-bold cursor-pointer">記住帳號</label>
+                </div>
+                <button id="loginBtn" class="w-full bg-blue-600 text-white font-bold py-3 rounded-lg hover:bg-blue-700 transition mt-4">登入系統</button>
+                <p id="loginError" class="text-red-500 text-sm text-center font-bold hidden"></p>
             </div>
-        </section>
-
-        <section class="mb-8 bg-white p-5 rounded-xl border border-slate-200 card-shadow transition-colors duration-300" id="formSection">
-            <h2 id="formTitle" class="text-lg font-bold text-slate-800 mb-3">🆕 快速錄入新訂單</h2>
-            <form id="orderForm" class="grid grid-cols-1 md:grid-cols-8 gap-3">
-                <div class="md:col-span-2">
-                    <label class="block text-xs font-medium text-slate-700">經營模式</label>
-                    <select id="mode" class="mt-1 block w-full p-2 border border-slate-300 rounded-md bg-slate-50 text-sm" required>
-                        <option value="Mode_A">Mode A: 自營自出</option>
-                        <option value="Mode_B">Mode B: 轉給同業</option>
-                        <option value="Mode_C">Mode C: 同業轉入</option>
-                    </select>
-                </div>
-                <div class="md:col-span-3">
-                    <label class="block text-xs font-medium text-slate-700">旅客姓名/單號</label>
-                    <input type="text" id="customer" class="mt-1 block w-full p-2 border border-slate-300 rounded-md text-sm" required>
-                </div>
-                <div class="md:col-span-3">
-                    <label class="block text-xs font-medium text-slate-700">出發時間</label>
-                    <input type="text" id="departureTime" placeholder="YYYY-MM-DD" class="mt-1 block w-full p-2 border border-slate-300 rounded-md bg-yellow-50 focus:bg-white text-sm font-bold text-slate-800">
-                </div>
-                
-                <div class="md:col-span-2">
-                    <label class="block text-xs font-medium text-slate-700">幣別</label>
-                    <select id="currency" class="mt-1 block w-full p-2 border border-slate-300 rounded-md bg-slate-50 text-sm font-bold text-blue-700" onchange="handleCurrencyChange()">
-                        <option value="AUD">🇦🇺 澳幣 (AUD)</option>
-                        <option value="CNY">🇨🇳 人民幣 (CNY)</option>
-                        <option value="TWD">🇹🇼 台幣 (TWD)</option>
-                    </select>
-                </div>
-                <div class="md:col-span-2">
-                    <label class="block text-xs font-medium text-slate-700">單價</label>
-                    <input type="number" step="0.01" id="unitPrice" placeholder="有單價會自動乘" class="mt-1 block w-full p-2 border border-slate-300 rounded-md text-sm">
-                </div>
-                <div class="md:col-span-1">
-                    <label class="block text-xs font-medium text-slate-700">人數 (Pax)</label>
-                    <input type="number" id="pax" value="1" min="1" class="mt-1 block w-full p-2 border border-slate-300 rounded-md text-sm" required>
-                </div>
-                <div class="md:col-span-2">
-                    <label class="block text-xs font-medium text-slate-700">總額</label>
-                    <input type="number" step="0.01" id="amount" class="mt-1 block w-full p-2 border border-blue-400 bg-blue-50 font-bold rounded-md text-sm" required>
-                </div>
-                <div class="md:col-span-1">
-                    <label class="block text-xs font-medium text-slate-700">匯率</label>
-                    <input type="number" step="0.001" id="fxRate" value="23" class="mt-1 block w-full p-2 border border-slate-300 rounded-md text-sm" required>
-                </div>
-
-                <div class="md:col-span-2">
-                    <label class="block text-xs font-medium text-slate-700">成本 (預設0)</label>
-                    <input type="number" step="0.01" id="cost" value="0" class="mt-1 block w-full p-2 border border-red-300 bg-red-50 text-red-700 font-bold rounded-md text-sm" required>
-                </div>
-                <div class="md:col-span-3">
-                    <label class="block text-xs font-medium text-slate-700">收款狀態</label>
-                    <select id="paymentStatus" class="mt-1 block w-full p-2 border border-slate-300 rounded-md bg-slate-50 text-sm" required>
-                        <option value="unpaid">❌ 未收款 (Pending)</option>
-                        <option value="paid">✅ 已收款 (Paid)</option>
-                    </select>
-                </div>
-                <div class="md:col-span-3">
-                    <label class="block text-xs font-medium text-slate-700">結案狀態</label>
-                    <select id="caseStatus" class="mt-1 block w-full p-2 border border-slate-300 rounded-md bg-slate-50 text-sm" required>
-                        <option value="open">⏳ 未結案 (Open)</option>
-                        <option value="closed">📁 已結案 (Closed)</option>
-                    </select>
-                </div>
-
-                <div class="md:col-span-5">
-                    <label class="block text-xs font-medium text-slate-700">行程詳情 / 備註 (包含金流)</label>
-                    <textarea id="note" rows="2" class="mt-1 block w-full p-2 border border-slate-300 rounded-md text-sm"></textarea>
-                </div>
-                <div class="md:col-span-3">
-                    <label class="block text-xs font-medium text-slate-700">特殊資訊 (體重/裝備/房型等)</label>
-                    <input type="text" id="specialInfo" class="mt-1 block w-full p-2 border border-slate-300 rounded-md text-sm">
-                </div>
-                
-                <div class="md:col-span-8 flex justify-end mt-1 space-x-3">
-                    <button type="button" id="cancelEditBtn" class="hidden px-5 py-2 border border-slate-300 rounded-lg text-slate-600 hover:bg-slate-50 text-sm">取消修改</button>
-                    <button type="submit" id="formSubmitBtn" class="bg-emerald-600 text-white px-6 py-2 rounded-lg font-bold hover:bg-emerald-700 transition text-sm">預覽並準備存檔</button>
-                </div>
-            </form>
-        </section>
+        </div>
     </div>
 
-    <main id="view-dashboard" class="view-section grid grid-cols-1 lg:grid-cols-3 gap-6 no-print">
-        <section class="bg-white rounded-xl border border-emerald-200 overflow-hidden shadow-sm flex flex-col max-h-[800px]">
-            <div class="bg-emerald-50 p-3 border-b border-emerald-100 flex-shrink-0"><h3 class="font-bold text-emerald-800">📦 自營接單 (A)</h3></div>
-            <div id="dash-mode-a" class="p-4 space-y-4 overflow-y-auto no-scrollbar flex-grow"></div>
-        </section>
-        <section class="bg-white rounded-xl border border-orange-200 overflow-hidden shadow-sm flex flex-col max-h-[800px]">
-            <div class="bg-orange-50 p-3 border-b border-orange-100 flex-shrink-0"><h3 class="font-bold text-orange-800">📤 轉給同業 (B)</h3></div>
-            <div id="dash-mode-b" class="p-4 space-y-4 overflow-y-auto no-scrollbar flex-grow"></div>
-        </section>
-        <section class="bg-white rounded-xl border border-purple-200 overflow-hidden shadow-sm flex flex-col max-h-[800px]">
-            <div class="bg-purple-50 p-3 border-b border-purple-100 flex-shrink-0"><h3 class="font-bold text-purple-800">📥 同業轉入 (C)</h3></div>
-            <div id="dash-mode-c" class="p-4 space-y-4 overflow-y-auto no-scrollbar flex-grow"></div>
-        </section>
-    </main>
-
-    <main id="view-single-mode" class="view-section hidden no-print">
-        <section class="bg-white rounded-xl border border-slate-200 overflow-hidden shadow-sm">
-            <div class="bg-slate-100 p-4 border-b border-slate-200 flex justify-between items-center">
-                <h3 class="text-lg font-bold text-slate-800" id="single-mode-title">模式列表</h3>
+    <div id="mainApp" class="hidden p-6 max-w-7xl mx-auto relative">
+        <header class="mb-6 flex justify-between items-end no-print">
+            <div>
+                <h1 class="text-3xl font-bold">澳洲旅遊業務總覽</h1>
+                <p class="text-slate-500 mt-1 text-sm font-bold" id="statusText">資料庫連線中...</p>
             </div>
-            <div id="single-mode-list" class="p-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"></div>
-        </section>
-    </main>
+            <button id="logoutBtn" class="bg-slate-200 text-slate-700 px-4 py-2 rounded-lg font-bold hover:bg-red-500 hover:text-white transition shadow-sm">登出系統</button>
+        </header>
 
-    <main id="view-report" class="view-section hidden">
-        <div class="flex flex-wrap gap-3 mb-4 items-center bg-white p-4 rounded-xl border border-slate-200 shadow-sm no-print">
-            <h3 class="font-bold text-slate-800 mr-4">⚙️ 報表設定</h3>
-            <select id="reportTimeType" class="p-2 border border-slate-300 rounded text-sm bg-slate-50" onchange="toggleDateInputs('report'); updateReportHeader('report'); renderUI()">
-                <option value="all">顯示全部出發時間</option>
-                <option value="month">📅 出發月報表</option>
-                <option value="day">📆 出發日報表</option>
-            </select>
-            <input type="month" id="reportMonthPicker" class="hidden p-2 border border-slate-300 rounded text-sm" onchange="updateReportHeader('report'); renderUI()">
-            <input type="date" id="reportDatePicker" class="hidden p-2 border border-slate-300 rounded text-sm" onchange="updateReportHeader('report'); renderUI()">
-            
-            <select id="reportModeFilter" class="p-2 border border-slate-300 rounded text-sm bg-slate-50 ml-auto" onchange="renderUI()">
-                <option value="all">模式：全部</option>
-                <option value="Mode_A">📦 自營接單 (A)</option>
-                <option value="Mode_B">📤 轉給同業 (B)</option>
-                <option value="Mode_C">📥 同業轉入 (C)</option>
-            </select>
+        <nav class="flex flex-wrap border-b border-slate-300 mb-6 bg-white rounded-t-lg overflow-hidden card-shadow no-print">
+            <button onclick="switchTab('dashboard')" id="tab-dashboard" class="nav-btn active flex-1 py-3 text-center text-slate-600 hover:bg-slate-50 transition min-w-[120px]">📊 首頁總覽</button>
+            <button onclick="switchTab('Mode_A')" id="tab-Mode_A" class="nav-btn flex-1 py-3 text-center text-slate-600 hover:bg-slate-50 transition min-w-[120px]">📦 自營接單 (A)</button>
+            <button onclick="switchTab('Mode_B')" id="tab-Mode_B" class="nav-btn flex-1 py-3 text-center text-slate-600 hover:bg-slate-50 transition min-w-[120px]">📤 轉給同業 (B)</button>
+            <button onclick="switchTab('Mode_C')" id="tab-Mode_C" class="nav-btn flex-1 py-3 text-center text-slate-600 hover:bg-slate-50 transition min-w-[120px]">📥 同業轉入 (C)</button>
+            <button onclick="switchTab('report')" id="tab-report" class="nav-btn flex-1 py-3 text-center text-slate-600 hover:bg-slate-50 transition min-w-[120px]">📈 出發報表</button>
+            <button onclick="switchTab('profit-loss')" id="tab-profit-loss" class="nav-btn flex-1 py-3 text-center text-slate-600 hover:bg-slate-50 transition min-w-[120px]">💰 損益報表</button>
+        </nav>
 
-            <select id="reportFilter" class="p-2 border border-slate-300 rounded text-sm bg-slate-50" onchange="renderUI()">
-                <option value="all">結案狀態：全部</option>
-                <option value="open">⏳ 只顯示未結案</option>
-                <option value="closed">📁 只顯示已結案</option>
-            </select>
-            <button onclick="window.print()" class="px-4 py-2 border border-slate-800 text-slate-800 font-bold rounded hover:bg-slate-100 text-sm transition">🖨️ 列印</button>
-            <button onclick="exportToImage('report')" class="px-4 py-2 bg-blue-600 text-white font-bold rounded hover:bg-blue-700 text-sm transition">📸 下載圖片</button>
+        <div id="inputSection" class="no-print">
+            <section class="mb-6 bg-blue-50 p-5 rounded-xl border border-blue-200 shadow-sm">
+                <h2 class="text-base font-bold text-blue-800 mb-2">⚡ 智慧文字解析 (貼上 LINE 訂單)</h2>
+                <textarea id="rawOrderText" rows="3" class="w-full p-2 border border-blue-300 rounded-md text-sm focus:ring-blue-500" placeholder="在此貼上 LINE 群組的原始文字訂單..."></textarea>
+                <div class="mt-2 flex justify-end">
+                    <button type="button" id="parseBtn" class="bg-blue-600 text-white px-5 py-1.5 rounded-lg font-bold text-sm hover:bg-blue-700 transition">自動解析欄位 ↓</button>
+                </div>
+            </section>
+
+            <section class="mb-8 bg-white p-5 rounded-xl border border-slate-200 card-shadow transition-colors duration-300" id="formSection">
+                <h2 id="formTitle" class="text-lg font-bold text-slate-800 mb-3">🆕 快速錄入新訂單</h2>
+                <form id="orderForm" class="grid grid-cols-1 md:grid-cols-8 gap-3">
+                    <div class="md:col-span-2">
+                        <label class="block text-xs font-medium text-slate-700">經營模式</label>
+                        <select id="mode" class="mt-1 block w-full p-2 border border-slate-300 rounded-md bg-slate-50 text-sm" required>
+                            <option value="Mode_A">Mode A: 自營自出</option>
+                            <option value="Mode_B">Mode B: 轉給同業</option>
+                            <option value="Mode_C">Mode C: 同業轉入</option>
+                        </select>
+                    </div>
+                    <div class="md:col-span-3">
+                        <label class="block text-xs font-medium text-slate-700">旅客姓名/單號</label>
+                        <input type="text" id="customer" class="mt-1 block w-full p-2 border border-slate-300 rounded-md text-sm" required>
+                    </div>
+                    <div class="md:col-span-3">
+                        <label class="block text-xs font-medium text-slate-700">出發時間</label>
+                        <input type="text" id="departureTime" placeholder="YYYY-MM-DD" class="mt-1 block w-full p-2 border border-slate-300 rounded-md bg-yellow-50 focus:bg-white text-sm font-bold text-slate-800">
+                    </div>
+                    
+                    <div class="md:col-span-2">
+                        <label class="block text-xs font-medium text-slate-700">幣別</label>
+                        <select id="currency" class="mt-1 block w-full p-2 border border-slate-300 rounded-md bg-slate-50 text-sm font-bold text-blue-700" onchange="handleCurrencyChange()">
+                            <option value="AUD">🇦🇺 澳幣 (AUD)</option>
+                            <option value="CNY">🇨🇳 人民幣 (CNY)</option>
+                            <option value="TWD">🇹🇼 台幣 (TWD)</option>
+                        </select>
+                    </div>
+                    <div class="md:col-span-2">
+                        <label class="block text-xs font-medium text-slate-700">單價</label>
+                        <input type="number" step="0.01" id="unitPrice" placeholder="有單價會自動乘" class="mt-1 block w-full p-2 border border-slate-300 rounded-md text-sm">
+                    </div>
+                    <div class="md:col-span-1">
+                        <label class="block text-xs font-medium text-slate-700">人數 (Pax)</label>
+                        <input type="number" id="pax" value="1" min="1" class="mt-1 block w-full p-2 border border-slate-300 rounded-md text-sm" required>
+                    </div>
+                    <div class="md:col-span-2">
+                        <label class="block text-xs font-medium text-slate-700">總額</label>
+                        <input type="number" step="0.01" id="amount" class="mt-1 block w-full p-2 border border-blue-400 bg-blue-50 font-bold rounded-md text-sm" required>
+                    </div>
+                    <div class="md:col-span-1">
+                        <label class="block text-xs font-medium text-slate-700">匯率</label>
+                        <input type="number" step="0.001" id="fxRate" value="23" class="mt-1 block w-full p-2 border border-slate-300 rounded-md text-sm" required>
+                    </div>
+
+                    <div class="md:col-span-2">
+                        <label class="block text-xs font-medium text-slate-700">成本 (預設0)</label>
+                        <input type="number" step="0.01" id="cost" value="0" class="mt-1 block w-full p-2 border border-red-300 bg-red-50 text-red-700 font-bold rounded-md text-sm" required>
+                    </div>
+                    <div class="md:col-span-3">
+                        <label class="block text-xs font-medium text-slate-700">收款狀態</label>
+                        <select id="paymentStatus" class="mt-1 block w-full p-2 border border-slate-300 rounded-md bg-slate-50 text-sm" required>
+                            <option value="unpaid">❌ 未收款 (Pending)</option>
+                            <option value="paid">✅ 已收款 (Paid)</option>
+                        </select>
+                    </div>
+                    <div class="md:col-span-3">
+                        <label class="block text-xs font-medium text-slate-700">結案狀態</label>
+                        <select id="caseStatus" class="mt-1 block w-full p-2 border border-slate-300 rounded-md bg-slate-50 text-sm" required>
+                            <option value="open">⏳ 未結案 (Open)</option>
+                            <option value="closed">📁 已結案 (Closed)</option>
+                        </select>
+                    </div>
+
+                    <div class="md:col-span-5">
+                        <label class="block text-xs font-medium text-slate-700">行程詳情 / 備註 (包含金流)</label>
+                        <textarea id="note" rows="2" class="mt-1 block w-full p-2 border border-slate-300 rounded-md text-sm"></textarea>
+                    </div>
+                    <div class="md:col-span-3">
+                        <label class="block text-xs font-medium text-slate-700">特殊資訊 (體重/裝備/房型等)</label>
+                        <input type="text" id="specialInfo" class="mt-1 block w-full p-2 border border-slate-300 rounded-md text-sm">
+                    </div>
+                    
+                    <div class="md:col-span-8 flex justify-end mt-1 space-x-3">
+                        <button type="button" id="cancelEditBtn" class="hidden px-5 py-2 border border-slate-300 rounded-lg text-slate-600 hover:bg-slate-50 text-sm">取消修改</button>
+                        <button type="submit" id="formSubmitBtn" class="bg-emerald-600 text-white px-6 py-2 rounded-lg font-bold hover:bg-emerald-700 transition text-sm">預覽並準備存檔</button>
+                    </div>
+                </form>
+            </section>
         </div>
 
-        <div id="report-container" class="bg-white rounded-xl overflow-hidden p-2 report-container">
-            <h2 id="reportHeaderTitle" class="text-2xl font-bold text-center text-slate-800 py-4 hidden print:block">澳洲旅遊業務出發報表 (全部出發時間)</h2>
-            
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-                <div class="bg-slate-50 p-5 rounded-xl border border-slate-200 border-l-4 border-l-blue-500">
-                    <p class="text-sm text-slate-500 mb-1">符合條件訂單數</p>
-                    <h3 class="text-3xl font-bold text-slate-800" id="rep-total-count">0</h3>
+        <main id="view-dashboard" class="view-section grid grid-cols-1 lg:grid-cols-3 gap-6 no-print">
+            <section class="bg-white rounded-xl border border-emerald-200 overflow-hidden shadow-sm flex flex-col max-h-[800px]">
+                <div class="bg-emerald-50 p-3 border-b border-emerald-100 flex-shrink-0"><h3 class="font-bold text-emerald-800">📦 自營接單 (A)</h3></div>
+                <div id="dash-mode-a" class="p-4 space-y-4 overflow-y-auto no-scrollbar flex-grow"></div>
+            </section>
+            <section class="bg-white rounded-xl border border-orange-200 overflow-hidden shadow-sm flex flex-col max-h-[800px]">
+                <div class="bg-orange-50 p-3 border-b border-orange-100 flex-shrink-0"><h3 class="font-bold text-orange-800">📤 轉給同業 (B)</h3></div>
+                <div id="dash-mode-b" class="p-4 space-y-4 overflow-y-auto no-scrollbar flex-grow"></div>
+            </section>
+            <section class="bg-white rounded-xl border border-purple-200 overflow-hidden shadow-sm flex flex-col max-h-[800px]">
+                <div class="bg-purple-50 p-3 border-b border-purple-100 flex-shrink-0"><h3 class="font-bold text-purple-800">📥 同業轉入 (C)</h3></div>
+                <div id="dash-mode-c" class="p-4 space-y-4 overflow-y-auto no-scrollbar flex-grow"></div>
+            </section>
+        </main>
+
+        <main id="view-single-mode" class="view-section hidden no-print">
+            <section class="bg-white rounded-xl border border-slate-200 overflow-hidden shadow-sm">
+                <div class="bg-slate-100 p-4 border-b border-slate-200 flex justify-between items-center">
+                    <h3 class="text-lg font-bold text-slate-800" id="single-mode-title">模式列表</h3>
                 </div>
-                <div class="bg-slate-50 p-5 rounded-xl border border-slate-200 border-l-4 border-l-red-500">
-                    <p class="text-sm text-slate-500 mb-1">❌ 未收款總額 (營收)</p>
-                    <h3 class="text-3xl font-bold text-red-600" id="rep-unpaid-sum">NT$ 0</h3>
-                </div>
-                <div class="bg-slate-50 p-5 rounded-xl border border-slate-200 border-l-4 border-l-emerald-500">
-                    <p class="text-sm text-slate-500 mb-1">✅ 已收款總額 (營收)</p>
-                    <h3 class="text-3xl font-bold text-emerald-600" id="rep-paid-sum">NT$ 0</h3>
-                </div>
+                <div id="single-mode-list" class="p-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"></div>
+            </section>
+        </main>
+
+        <main id="view-report" class="view-section hidden">
+            <div class="flex flex-wrap gap-3 mb-4 items-center bg-white p-4 rounded-xl border border-slate-200 shadow-sm no-print">
+                <h3 class="font-bold text-slate-800 mr-4">⚙️ 報表設定</h3>
+                <select id="reportTimeType" class="p-2 border border-slate-300 rounded text-sm bg-slate-50" onchange="toggleDateInputs('report'); updateReportHeader('report'); renderUI()">
+                    <option value="all">顯示全部出發時間</option>
+                    <option value="month">📅 出發月報表</option>
+                    <option value="day">📆 出發日報表</option>
+                </select>
+                <input type="month" id="reportMonthPicker" class="hidden p-2 border border-slate-300 rounded text-sm" onchange="updateReportHeader('report'); renderUI()">
+                <input type="date" id="reportDatePicker" class="hidden p-2 border border-slate-300 rounded text-sm" onchange="updateReportHeader('report'); renderUI()">
+                
+                <select id="reportModeFilter" class="p-2 border border-slate-300 rounded text-sm bg-slate-50 ml-auto" onchange="renderUI()">
+                    <option value="all">模式：全部</option>
+                    <option value="Mode_A">📦 自營接單 (A)</option>
+                    <option value="Mode_B">📤 轉給同業 (B)</option>
+                    <option value="Mode_C">📥 同業轉入 (C)</option>
+                </select>
+                <select id="reportFilter" class="p-2 border border-slate-300 rounded text-sm bg-slate-50" onchange="renderUI()">
+                    <option value="all">結案狀態：全部</option>
+                    <option value="open">⏳ 只顯示未結案</option>
+                    <option value="closed">📁 只顯示已結案</option>
+                </select>
+                <button onclick="window.print()" class="px-4 py-2 border border-slate-800 text-slate-800 font-bold rounded hover:bg-slate-100 text-sm transition">🖨️ 列印</button>
+                <button onclick="exportToImage('report')" class="px-4 py-2 bg-blue-600 text-white font-bold rounded hover:bg-blue-700 text-sm transition">📸 下載圖片</button>
             </div>
 
-            <div class="border border-slate-200 rounded-lg overflow-x-auto">
-                <table class="w-full text-left border-collapse text-sm">
-                    <thead>
-                        <tr class="bg-slate-800 text-white">
-                            <th class="p-3">雙狀態</th>
-                            <th class="p-3">模式</th>
-                            <th class="p-3">姓名/單號</th>
-                            <th class="p-3">出發時間</th>
-                            <th class="p-3 text-right">金額明細 (含成本)</th>
-                            <th class="p-3 text-center no-print">操作</th>
-                        </tr>
-                    </thead>
-                    <tbody id="report-table-body" class="divide-y divide-slate-200 bg-white"></tbody>
-                </table>
-            </div>
-        </div>
-    </main>
-
-    <main id="view-profit-loss" class="view-section hidden">
-        <div class="flex flex-wrap gap-3 mb-4 items-center bg-white p-4 rounded-xl border border-slate-200 shadow-sm no-print">
-            <h3 class="font-bold text-slate-800 mr-4">⚙️ 損益設定</h3>
-            <select id="plTimeType" class="p-2 border border-slate-300 rounded text-sm bg-slate-50" onchange="toggleDateInputs('pl'); updateReportHeader('pl'); renderUI()">
-                <option value="all">顯示全部時間</option>
-                <option value="month">📅 月份損益</option>
-                <option value="day">📆 單日損益</option>
-            </select>
-            <input type="month" id="plMonthPicker" class="hidden p-2 border border-slate-300 rounded text-sm" onchange="updateReportHeader('pl'); renderUI()">
-            <input type="date" id="plDatePicker" class="hidden p-2 border border-slate-300 rounded text-sm" onchange="updateReportHeader('pl'); renderUI()">
-            
-            <select id="plModeFilter" class="p-2 border border-slate-300 rounded text-sm bg-slate-50 ml-auto" onchange="renderUI()">
-                <option value="all">模式：全部</option>
-                <option value="Mode_A">📦 自營接單 (A)</option>
-                <option value="Mode_B">📤 轉給同業 (B)</option>
-                <option value="Mode_C">📥 同業轉入 (C)</option>
-            </select>
-
-            <select id="plFilter" class="p-2 border border-slate-300 rounded text-sm bg-slate-50" onchange="renderUI()">
-                <option value="all">結案狀態：全部</option>
-                <option value="closed">📁 只顯示已結案(精準毛利)</option>
-            </select>
-            <button onclick="window.print()" class="px-4 py-2 border border-slate-800 text-slate-800 font-bold rounded hover:bg-slate-100 text-sm transition">🖨️ 列印</button>
-            <button onclick="exportToImage('profit-loss')" class="px-4 py-2 bg-blue-600 text-white font-bold rounded hover:bg-blue-700 text-sm transition">📸 下載圖片</button>
-        </div>
-
-        <div id="pl-container" class="bg-white rounded-xl overflow-hidden p-2 report-container">
-            <h2 id="plHeaderTitle" class="text-2xl font-bold text-center text-slate-800 py-4 hidden print:block">澳洲旅遊業務損益表 (全部時間)</h2>
-            
-            <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-                <div class="bg-slate-50 p-4 rounded-xl border border-slate-200 border-l-4 border-l-blue-500">
-                    <p class="text-sm text-slate-500 mb-1">總營收 (TWD)</p>
-                    <h3 class="text-2xl font-bold text-blue-600" id="pl-rev-sum">NT$ 0</h3>
+            <div id="report-container" class="bg-white rounded-xl overflow-hidden p-2 report-container">
+                <h2 id="reportHeaderTitle" class="text-2xl font-bold text-center text-slate-800 py-4 hidden print:block">澳洲旅遊業務出發報表 (全部出發時間)</h2>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                    <div class="bg-slate-50 p-5 rounded-xl border border-slate-200 border-l-4 border-l-blue-500">
+                        <p class="text-sm text-slate-500 mb-1">符合條件訂單數</p>
+                        <h3 class="text-3xl font-bold text-slate-800" id="rep-total-count">0</h3>
+                    </div>
+                    <div class="bg-slate-50 p-5 rounded-xl border border-slate-200 border-l-4 border-l-red-500">
+                        <p class="text-sm text-slate-500 mb-1">❌ 未收款總額 (營收)</p>
+                        <h3 class="text-3xl font-bold text-red-600" id="rep-unpaid-sum">NT$ 0</h3>
+                    </div>
+                    <div class="bg-slate-50 p-5 rounded-xl border border-slate-200 border-l-4 border-l-emerald-500">
+                        <p class="text-sm text-slate-500 mb-1">✅ 已收款總額 (營收)</p>
+                        <h3 class="text-3xl font-bold text-emerald-600" id="rep-paid-sum">NT$ 0</h3>
+                    </div>
                 </div>
-                <div class="bg-slate-50 p-4 rounded-xl border border-slate-200 border-l-4 border-l-red-500">
-                    <p class="text-sm text-slate-500 mb-1">總成本 (TWD)</p>
-                    <h3 class="text-2xl font-bold text-red-600" id="pl-cost-sum">NT$ 0</h3>
-                </div>
-                <div class="bg-slate-50 p-4 rounded-xl border border-slate-200 border-l-4 border-l-emerald-500">
-                    <p class="text-sm text-slate-500 mb-1">總毛利 (TWD)</p>
-                    <h3 class="text-2xl font-bold text-emerald-600" id="pl-profit-sum">NT$ 0</h3>
-                </div>
-                <div class="bg-slate-50 p-4 rounded-xl border border-slate-200 border-l-4 border-l-purple-500">
-                    <p class="text-sm text-slate-500 mb-1">平均毛利率</p>
-                    <h3 class="text-2xl font-bold text-purple-600" id="pl-margin">0%</h3>
+                <div class="border border-slate-200 rounded-lg overflow-x-auto">
+                    <table class="w-full text-left border-collapse text-sm">
+                        <thead>
+                            <tr class="bg-slate-800 text-white">
+                                <th class="p-3">雙狀態</th>
+                                <th class="p-3">模式</th>
+                                <th class="p-3">姓名/單號</th>
+                                <th class="p-3">出發時間</th>
+                                <th class="p-3 text-right">金額明細 (含成本)</th>
+                                <th class="p-3 text-center no-print">操作</th>
+                            </tr>
+                        </thead>
+                        <tbody id="report-table-body" class="divide-y divide-slate-200 bg-white"></tbody>
+                    </table>
                 </div>
             </div>
+        </main>
 
-            <div class="border border-slate-200 rounded-lg overflow-x-auto">
-                <table class="w-full text-left border-collapse text-sm">
-                    <thead>
-                        <tr class="bg-slate-800 text-white">
-                            <th class="p-3">狀態/模式</th>
-                            <th class="p-3">姓名/單號</th>
-                            <th class="p-3">出發時間</th>
-                            <th class="p-3 text-right">營收</th>
-                            <th class="p-3 text-right">成本</th>
-                            <th class="p-3 text-right">毛利</th>
-                            <th class="p-3 text-center">毛利率</th>
-                        </tr>
-                    </thead>
-                    <tbody id="profit-table-body" class="divide-y divide-slate-200 bg-white">
-                    </tbody>
-                </table>
+        <main id="view-profit-loss" class="view-section hidden">
+            <div class="flex flex-wrap gap-3 mb-4 items-center bg-white p-4 rounded-xl border border-slate-200 shadow-sm no-print">
+                <h3 class="font-bold text-slate-800 mr-4">⚙️ 損益設定</h3>
+                <select id="plTimeType" class="p-2 border border-slate-300 rounded text-sm bg-slate-50" onchange="toggleDateInputs('pl'); updateReportHeader('pl'); renderUI()">
+                    <option value="all">顯示全部時間</option>
+                    <option value="month">📅 月份損益</option>
+                    <option value="day">📆 單日損益</option>
+                </select>
+                <input type="month" id="plMonthPicker" class="hidden p-2 border border-slate-300 rounded text-sm" onchange="updateReportHeader('pl'); renderUI()">
+                <input type="date" id="plDatePicker" class="hidden p-2 border border-slate-300 rounded text-sm" onchange="updateReportHeader('pl'); renderUI()">
+                <select id="plModeFilter" class="p-2 border border-slate-300 rounded text-sm bg-slate-50 ml-auto" onchange="renderUI()">
+                    <option value="all">模式：全部</option>
+                    <option value="Mode_A">📦 自營接單 (A)</option>
+                    <option value="Mode_B">📤 轉給同業 (B)</option>
+                    <option value="Mode_C">📥 同業轉入 (C)</option>
+                </select>
+                <select id="plFilter" class="p-2 border border-slate-300 rounded text-sm bg-slate-50" onchange="renderUI()">
+                    <option value="all">結案狀態：全部</option>
+                    <option value="closed">📁 只顯示已結案</option>
+                </select>
+                <button onclick="window.print()" class="px-4 py-2 border border-slate-800 text-slate-800 font-bold rounded hover:bg-slate-100 text-sm transition">🖨️ 列印</button>
+                <button onclick="exportToImage('profit-loss')" class="px-4 py-2 bg-blue-600 text-white font-bold rounded hover:bg-blue-700 text-sm transition">📸 下載圖片</button>
             </div>
-        </div>
-    </main>
+
+            <div id="pl-container" class="bg-white rounded-xl overflow-hidden p-2 report-container">
+                <h2 id="plHeaderTitle" class="text-2xl font-bold text-center text-slate-800 py-4 hidden print:block">澳洲旅遊業務損益表 (全部時間)</h2>
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+                    <div class="bg-slate-50 p-4 rounded-xl border border-slate-200 border-l-4 border-l-blue-500">
+                        <p class="text-sm text-slate-500 mb-1">總營收 (TWD)</p>
+                        <h3 class="text-2xl font-bold text-blue-600" id="pl-rev-sum">NT$ 0</h3>
+                    </div>
+                    <div class="bg-slate-50 p-4 rounded-xl border border-slate-200 border-l-4 border-l-red-500">
+                        <p class="text-sm text-slate-500 mb-1">總成本 (TWD)</p>
+                        <h3 class="text-2xl font-bold text-red-600" id="pl-cost-sum">NT$ 0</h3>
+                    </div>
+                    <div class="bg-slate-50 p-4 rounded-xl border border-slate-200 border-l-4 border-l-emerald-500">
+                        <p class="text-sm text-slate-500 mb-1">總毛利 (TWD)</p>
+                        <h3 class="text-2xl font-bold text-emerald-600" id="pl-profit-sum">NT$ 0</h3>
+                    </div>
+                    <div class="bg-slate-50 p-4 rounded-xl border border-slate-200 border-l-4 border-l-purple-500">
+                        <p class="text-sm text-slate-500 mb-1">平均毛利率</p>
+                        <h3 class="text-2xl font-bold text-purple-600" id="pl-margin">0%</h3>
+                    </div>
+                </div>
+                <div class="border border-slate-200 rounded-lg overflow-x-auto">
+                    <table class="w-full text-left border-collapse text-sm">
+                        <thead>
+                            <tr class="bg-slate-800 text-white">
+                                <th class="p-3">狀態/模式</th>
+                                <th class="p-3">姓名/單號</th>
+                                <th class="p-3">出發時間</th>
+                                <th class="p-3 text-right">營收</th>
+                                <th class="p-3 text-right">成本</th>
+                                <th class="p-3 text-right">毛利</th>
+                                <th class="p-3 text-center">毛利率</th>
+                            </tr>
+                        </thead>
+                        <tbody id="profit-table-body" class="divide-y divide-slate-200 bg-white"></tbody>
+                    </table>
+                </div>
+            </div>
+        </main>
+    </div>
 
     <div id="confirmModal" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden flex items-center justify-center backdrop-blur-sm no-print">
         <div class="bg-white p-8 rounded-2xl shadow-2xl max-w-md w-full">
@@ -315,9 +331,101 @@
     </div>
 
 <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+    import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+    import { getFirestore, collection, addDoc, onSnapshot, query, doc, updateDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+    // ⚠️ 請填入您的 Firebase 金鑰
+const firebaseConfig = {
+  apiKey: "AIzaSyCBKoPGs0TW6VI1Ws3-61USpjARQR-O8Mc",
+  authDomain: "aus-travel-system.firebaseapp.com",
+  projectId: "aus-travel-system",
+  storageBucket: "aus-travel-system.firebasestorage.app",
+  messagingSenderId: "733398393106",
+  appId: "1:733398393106:web:370b0717ef760be29953cb",
+  measurementId: "G-2CPJ8HH5PC"
+};
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+
     window.currentTab = 'dashboard';
     window.allOrders = []; 
+    let unsubscribeSnapshot = null;
 
+    // ================= 登入與記住帳號功能 =================
+    
+    // 網頁載入時檢查是否有暫存帳號
+    window.addEventListener('DOMContentLoaded', () => {
+        const savedEmail = localStorage.getItem('savedTravelAppEmail');
+        if (savedEmail) {
+            document.getElementById('loginEmail').value = savedEmail;
+            document.getElementById('rememberMe').checked = true;
+        }
+    });
+
+    onAuthStateChanged(auth, (user) => {
+        if (user) {
+            document.getElementById('loginScreen').classList.add('hidden');
+            document.getElementById('mainApp').classList.remove('hidden');
+            document.getElementById('statusText').innerText = `已登入: ${user.email} 🟢`;
+            document.getElementById('statusText').classList.replace("text-slate-500", "text-emerald-600");
+            
+            const q = query(collection(db, "orders"));
+            unsubscribeSnapshot = onSnapshot(q, (snapshot) => {
+                window.allOrders = [];
+                snapshot.forEach(d => window.allOrders.push({ id: d.id, data: d.data() }));
+                window.renderUI(); 
+            }, (error) => {
+                console.error("讀取失敗:", error);
+                alert("資料讀取失敗，請確認已將資料庫規則設為 if request.auth != null;");
+            });
+        } else {
+            document.getElementById('loginScreen').classList.remove('hidden');
+            document.getElementById('mainApp').classList.add('hidden');
+            if (unsubscribeSnapshot) unsubscribeSnapshot(); 
+        }
+    });
+
+    document.getElementById('loginBtn').addEventListener('click', async () => {
+        const email = document.getElementById('loginEmail').value;
+        const pass = document.getElementById('loginPassword').value;
+        const remember = document.getElementById('rememberMe').checked;
+        const errObj = document.getElementById('loginError');
+        
+        if(!email || !pass) {
+            errObj.innerText = "請輸入帳號和密碼！";
+            errObj.classList.remove('hidden');
+            return;
+        }
+        
+        try {
+            document.getElementById('loginBtn').innerText = "登入中...";
+            await signInWithEmailAndPassword(auth, email, pass);
+            errObj.classList.add('hidden');
+            
+            // 處理「記住帳號」的邏輯
+            if (remember) {
+                localStorage.setItem('savedTravelAppEmail', email);
+            } else {
+                localStorage.removeItem('savedTravelAppEmail');
+            }
+            // 密碼的部分請交給瀏覽器的彈窗提示儲存，切勿寫入 localStorage
+            
+        } catch (error) {
+            console.error(error);
+            errObj.innerText = "登入失敗：帳號或密碼錯誤。";
+            errObj.classList.remove('hidden');
+        } finally {
+            document.getElementById('loginBtn').innerText = "登入系統";
+        }
+    });
+
+    document.getElementById('logoutBtn').addEventListener('click', () => {
+        signOut(auth).catch(err => console.log(err));
+    });
+
+    // ================= 輔助函式與解析邏輯 =================
     window.getTodayFormatted = () => {
         const today = new Date();
         const yyyy = today.getFullYear();
@@ -372,7 +480,6 @@
         window.renderUI(); 
     };
 
-    // 處理日期的共用邏輯
     window.updateReportHeader = (prefix) => {
         const type = document.getElementById(`${prefix}TimeType`).value;
         const mp = document.getElementById(`${prefix}MonthPicker`).value;
@@ -380,7 +487,6 @@
         const header = document.getElementById(`${prefix === 'report' ? 'reportHeaderTitle' : 'plHeaderTitle'}`);
         
         const titleBase = prefix === 'report' ? '澳洲旅遊業務出發報表' : '澳洲旅遊業務損益表';
-        
         if (type === 'all') header.innerText = `${titleBase} (全部時間)`;
         else if (type === 'month') header.innerText = `${titleBase} (${mp})`;
         else if (type === 'day') header.innerText = `${titleBase} (${dp})`;
@@ -541,9 +647,6 @@
         if(special) document.getElementById('specialInfo').value = special.trim();
     });
 
-    let pendingData = {}; 
-    const modal = document.getElementById('confirmModal');
-
     document.getElementById('orderForm').addEventListener('submit', (e) => {
         e.preventDefault(); 
         const modeVal = document.getElementById('mode').value;
@@ -561,7 +664,7 @@
         const existingOrder = window.currentEditId ? window.allOrders.find(o => o.id === window.currentEditId) : null;
         const currentTimestamp = existingOrder ? existingOrder.data.timestamp : new Date();
 
-        pendingData = {
+        window.pendingData = {
             mode: modeVal,
             customer: document.getElementById('customer').value,
             pax: paxVal,
@@ -585,33 +688,22 @@
 
         document.getElementById('modalTitle').innerText = window.currentEditId ? "確認更新訂單" : "確認新增訂單";
         document.getElementById('modalMode').innerText = document.getElementById('mode').options[document.getElementById('mode').selectedIndex].text;
-        document.getElementById('modalCustomer').innerText = pendingData.customer;
+        document.getElementById('modalCustomer').innerText = window.pendingData.customer;
         document.getElementById('modalUnitPax').innerText = unitVal ? `單價 ${currSymbol} ${unitVal} × ${paxVal} 人` : `${paxVal} 人`;
         document.getElementById('modalAmount').innerText = `${currSymbol} ${amountVal}`;
         document.getElementById('modalCost').innerText = `${currSymbol} ${costVal}`;
-        document.getElementById('modalTwd').innerText = pendingData.twd.toLocaleString();
+        document.getElementById('modalTwd').innerText = window.pendingData.twd.toLocaleString();
         document.getElementById('modalPaymentStatus').innerText = paymentStatusVal === 'paid' ? '✅ 已收款' : '❌ 未收款';
         document.getElementById('modalCaseStatus').innerText = caseStatusVal === 'closed' ? '📁 已結案' : '⏳ 未結案';
-        document.getElementById('modalDeparture').innerText = pendingData.departure_time || '未指定';
-        document.getElementById('modalNote').innerText = pendingData.note;
+        document.getElementById('modalDeparture').innerText = window.pendingData.departure_time || '未指定';
+        document.getElementById('modalNote').innerText = window.pendingData.note;
 
-        modal.classList.remove('hidden');
+        document.getElementById('confirmModal').classList.remove('hidden');
     });
 
-    document.getElementById('cancelBtn').addEventListener('click', () => modal.classList.add('hidden') );
+    document.getElementById('cancelBtn').addEventListener('click', () => document.getElementById('confirmModal').classList.add('hidden') );
 
-const firebaseConfig = {
-  apiKey: "AIzaSyCBKoPGs0TW6VI1Ws3-61USpjARQR-O8Mc",
-  authDomain: "aus-travel-system.firebaseapp.com",
-  projectId: "aus-travel-system",
-  storageBucket: "aus-travel-system.firebasestorage.app",
-  messagingSenderId: "733398393106",
-  appId: "1:733398393106:web:370b0717ef760be29953cb",
-  measurementId: "G-2CPJ8HH5PC"
-};
-    let db;
-    let firestoreRef; 
-
+    // ================= 寫入與渲染 =================
     const getTimestampMs = (ts) => {
         if (!ts) return 0;
         if (ts.toMillis) return ts.toMillis();
@@ -620,18 +712,89 @@ const firebaseConfig = {
         return new Date(ts).getTime();
     };
 
-    const generateCardHTML = (doc) => {
-        const data = doc.data;
+    document.getElementById('confirmSaveBtn').addEventListener('click', async () => {
+        const btn = document.getElementById('confirmSaveBtn');
+        btn.disabled = true; btn.innerText = "寫入中...";
+        try {
+            if (window.currentEditId) {
+                await updateDoc(doc(db, "orders", window.currentEditId), window.pendingData);
+            } else {
+                await addDoc(collection(db, "orders"), window.pendingData);
+            }
+        } catch (e) {
+            console.error(e);
+            alert("寫入失敗，請確認您已經登入，且資料庫規則正確。");
+        } finally {
+            document.getElementById('confirmModal').classList.add('hidden'); 
+            btn.innerText = "確認並存入"; btn.disabled = false;
+            window.resetFormUI();
+        }
+    });
+
+    window.deleteOrder = async (id) => {
+        if (confirm('確定要刪除這筆訂單嗎？')) await deleteDoc(doc(db, "orders", id));
+    };
+
+    window.togglePayment = async (id, currentStatus) => {
+        const newStatus = currentStatus === 'paid' ? 'unpaid' : 'paid';
+        await updateDoc(doc(db, "orders", id), { payment_status: newStatus });
+    };
+    
+    window.toggleCase = async (id, currentStatus) => {
+        const newStatus = currentStatus === 'closed' ? 'open' : 'closed';
+        await updateDoc(doc(db, "orders", id), { case_status: newStatus });
+    };
+
+    window.editOrder = (id) => {
+        const dataDoc = window.allOrders.find(o => o.id === id);
+        if(!dataDoc) return;
+        window.currentEditId = id;
+        const data = dataDoc.data;
+        
+        document.getElementById('mode').value = data.mode;
+        document.getElementById('customer').value = data.customer || '';
+        
+        const savedCurrency = data.currency || 'AUD';
+        document.getElementById('currency').value = savedCurrency;
+        window.handleCurrencyChange(); 
+        document.getElementById('fxRate').value = data.fx_rate || 23; 
+        document.getElementById('fxRate').disabled = (savedCurrency === 'TWD');
+        
+        document.getElementById('unitPrice').value = data.unit_price || ''; 
+        document.getElementById('pax').value = data.pax || 1;
+        document.getElementById('amount').value = data.amount || data.aud || '';
+        
+        document.getElementById('cost').value = data.cost || '0';
+        document.getElementById('paymentStatus').value = data.payment_status || (data.status === 'completed' ? 'paid' : 'unpaid');
+        document.getElementById('caseStatus').value = data.case_status || (data.status === 'completed' ? 'closed' : 'open');
+        
+        document.getElementById('departureTime').value = data.departure_time || '';
+        document.getElementById('note').value = data.note || '';
+        document.getElementById('specialInfo').value = data.special_info || '';
+
+        if(window.currentTab === 'report' || window.currentTab === 'profit-loss') window.switchTab('dashboard');
+
+        document.getElementById('formTitle').innerText = "✏️ 修改訂單模式";
+        document.getElementById('formTitle').classList.replace("text-slate-800", "text-orange-600");
+        document.getElementById('formSection').classList.add("bg-orange-50", "border-orange-300");
+        document.getElementById('formSubmitBtn').innerText = "預覽並準備更新";
+        document.getElementById('formSubmitBtn').classList.replace("bg-emerald-600", "bg-orange-600");
+        document.getElementById('cancelEditBtn').classList.remove("hidden");
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    };
+
+    const generateCardHTML = (docItem) => {
+        const data = docItem.data;
         const isPaid = (data.payment_status === 'paid') || (!data.payment_status && data.status === 'completed');
         const isClosed = (data.case_status === 'closed') || (!data.case_status && data.status === 'completed');
         
         const paymentBadge = isPaid 
-            ? `<span class="bg-emerald-100 text-emerald-800 text-xs px-2 py-0.5 rounded mr-1 shadow-sm">✅ 收款</span>` 
-            : `<span class="bg-red-100 text-red-800 text-xs px-2 py-0.5 rounded mr-1 shadow-sm">❌ 未收</span>`;
+            ? `<span class="bg-emerald-100 text-emerald-800 text-xs px-2 py-0.5 rounded mr-1 shadow-sm">✅ 已收款</span>` 
+            : `<span class="bg-red-100 text-red-800 text-xs px-2 py-0.5 rounded mr-1 shadow-sm">❌ 未收款</span>`;
             
         const caseBadge = isClosed 
-            ? `<span class="bg-blue-100 text-blue-800 text-xs px-2 py-0.5 rounded mr-2 shadow-sm">📁 結案</span>` 
-            : `<span class="bg-yellow-100 text-yellow-800 text-xs px-2 py-0.5 rounded mr-2 shadow-sm">⏳ 未結</span>`;
+            ? `<span class="bg-blue-100 text-blue-800 text-xs px-2 py-0.5 rounded mr-2 shadow-sm">📁 已結案</span>` 
+            : `<span class="bg-yellow-100 text-yellow-800 text-xs px-2 py-0.5 rounded mr-2 shadow-sm">⏳ 未結案</span>`;
             
         const paxDisplay = data.pax ? `<span class="bg-slate-200 text-slate-700 font-bold text-xs px-2 py-0.5 rounded">👤 ${data.pax}</span>` : '';
         const timeDisplay = data.departure_time ? `<p class="text-sm font-bold text-orange-600 mt-1">⏰ 出發：${data.departure_time}</p>` : '';
@@ -646,17 +809,15 @@ const firebaseConfig = {
         return `
             <div class="order-card p-4 bg-white rounded-lg border border-slate-200 hover:border-blue-400 transition shadow-sm relative group">
                 <div class="action-btns absolute top-2 right-2 bg-white/95 p-1.5 rounded-lg shadow-md flex space-x-2 z-10 border border-slate-200">
-                    <button onclick="togglePayment('${doc.id}', '${isPaid ? 'paid' : 'unpaid'}')" title="切換收款狀態" class="text-slate-600 hover:text-emerald-600 text-xs font-bold transition">💲收款</button>
-                    <button onclick="toggleCase('${doc.id}', '${isClosed ? 'closed' : 'open'}')" title="切換結案狀態" class="text-slate-600 hover:text-blue-600 text-xs font-bold transition">📁結案</button>
-                    <button onclick="editOrder('${doc.id}')" title="修改" class="text-slate-400 hover:text-orange-500 transition">✏️</button>
-                    <button onclick="deleteOrder('${doc.id}')" title="刪除" class="text-slate-400 hover:text-red-500 transition">🗑️</button>
+                    <button onclick="togglePayment('${docItem.id}', '${isPaid ? 'paid' : 'unpaid'}')" title="切換收款狀態" class="text-slate-600 hover:text-emerald-600 text-xs font-bold transition">💲收款</button>
+                    <button onclick="toggleCase('${docItem.id}', '${isClosed ? 'closed' : 'open'}')" title="切換結案狀態" class="text-slate-600 hover:text-blue-600 text-xs font-bold transition">📁結案</button>
+                    <button onclick="editOrder('${docItem.id}')" title="修改" class="text-slate-400 hover:text-orange-500 transition">✏️</button>
+                    <button onclick="deleteOrder('${docItem.id}')" title="刪除" class="text-slate-400 hover:text-red-500 transition">🗑️</button>
                 </div>
                 
                 <div class="flex items-center mb-2 pr-32 flex-wrap gap-y-1">${paymentBadge} ${caseBadge} ${paxDisplay}</div>
-                
                 <p class="font-bold text-base text-slate-800 leading-tight">${data.customer}</p>
                 ${timeDisplay}
-                
                 <div class="bg-slate-50 border border-slate-100 rounded p-2 mt-2 max-h-20 overflow-y-auto text-xs text-slate-600 whitespace-pre-wrap">${data.note}</div>
                 <p class="text-xs text-red-500 mt-1 font-bold">${data.special_info || ''}</p>
                 
@@ -685,18 +846,13 @@ const firebaseConfig = {
 
         window.allOrders.sort((a, b) => getTimestampMs(b.data.timestamp) - getTimestampMs(a.data.timestamp));
 
-        // 報表變數
         let reportCount = 0, totalUnpaid = 0, totalPaid = 0;
-        let reportRows = []; 
-        
-        // 損益變數
+        let reportRows = [], plRows = [];
         let plTotalRev = 0, plTotalCost = 0;
-        let plRows = [];
 
-        // 讀取過濾條件 (報表與損益各自讀取)
         const activePrefix = window.currentTab === 'report' ? 'report' : (window.currentTab === 'profit-loss' ? 'pl' : null);
-        
         let filterStatus = 'all', filterTimeType = 'all', targetMonth = '', targetDate = '', filterMode = 'all';
+        
         if (activePrefix) {
             filterStatus = document.getElementById(`${activePrefix}Filter`)?.value || 'all';
             filterTimeType = document.getElementById(`${activePrefix}TimeType`)?.value || 'all';
@@ -705,9 +861,9 @@ const firebaseConfig = {
             targetDate = document.getElementById(`${activePrefix}DatePicker`)?.value || '';
         }
 
-        window.allOrders.forEach((doc) => {
-            const data = doc.data;
-            const cardHTML = generateCardHTML(doc);
+        window.allOrders.forEach((docItem) => {
+            const data = docItem.data;
+            const cardHTML = generateCardHTML(docItem);
 
             if (window.currentTab === 'dashboard') {
                 if (data.mode === 'Mode_A') document.getElementById('dash-mode-a').innerHTML += cardHTML;
@@ -718,7 +874,6 @@ const firebaseConfig = {
                 document.getElementById('single-mode-list').innerHTML += cardHTML;
             }
 
-            // 共用的過濾邏輯
             if (activePrefix) {
                 const isPaid = (data.payment_status === 'paid') || (!data.payment_status && data.status === 'completed');
                 const isClosed = (data.case_status === 'closed') || (!data.case_status && data.status === 'completed');
@@ -749,25 +904,22 @@ const firebaseConfig = {
                         reportCount++;
                         if (isPaid) totalPaid += (data.twd || 0);
                         else totalUnpaid += (data.twd || 0);
-                        reportRows.push(doc);
+                        reportRows.push(docItem);
                     } else if (window.currentTab === 'profit-loss') {
-                        // 確保換算為台幣
                         const fx = parseFloat(data.fx_rate) || 1;
                         const costTwd = (parseFloat(data.cost) || 0) * fx;
                         plTotalRev += (data.twd || 0);
                         plTotalCost += costTwd;
-                        plRows.push(doc);
+                        plRows.push(docItem);
                     }
                 }
             }
         });
 
-        // 繪製一般報表
         if (window.currentTab === 'report') {
             reportRows.sort((a, b) => (a.data.departure_time || "9999").localeCompare(b.data.departure_time || "9999"));
-
-            reportRows.forEach(doc => {
-                const data = doc.data;
+            reportRows.forEach(docItem => {
+                const data = docItem.data;
                 const isPaid = (data.payment_status === 'paid') || (!data.payment_status && data.status === 'completed');
                 const isClosed = (data.case_status === 'closed') || (!data.case_status && data.status === 'completed');
                 const paymentStr = isPaid ? '<span class="text-emerald-600 font-bold block mb-1 text-[11px]">✅ 已收款</span>' : '<span class="text-red-500 font-bold block mb-1 text-[11px]">❌ 未收款</span>';
@@ -791,7 +943,7 @@ const firebaseConfig = {
                             <p class="text-[10px] text-slate-500 font-normal mt-1 border-t border-slate-200 pt-1">NT$ ${data.twd.toLocaleString()}</p>
                         </td>
                         <td class="p-3 text-center no-print">
-                            <button onclick="editOrder('${doc.id}')" class="text-blue-600 hover:bg-blue-50 px-2 py-1 rounded text-xs">修改</button>
+                            <button onclick="editOrder('${docItem.id}')" class="text-blue-600 hover:bg-blue-50 px-2 py-1 rounded text-xs">修改</button>
                         </td>
                     </tr>
                 `;
@@ -801,12 +953,10 @@ const firebaseConfig = {
             document.getElementById('rep-paid-sum').innerText = "NT$ " + totalPaid.toLocaleString();
         }
 
-        // 繪製損益報表
         if (window.currentTab === 'profit-loss') {
             plRows.sort((a, b) => (a.data.departure_time || "9999").localeCompare(b.data.departure_time || "9999"));
-
-            plRows.forEach(doc => {
-                const data = doc.data;
+            plRows.forEach(docItem => {
+                const data = docItem.data;
                 const isClosed = (data.case_status === 'closed') || (!data.case_status && data.status === 'completed');
                 const caseStr = isClosed ? '<span class="text-blue-600 font-bold block text-[11px]">📁 已結案</span>' : '<span class="text-yellow-600 font-bold block text-[11px]">⏳ 未結案</span>';
                 const modeMap = { Mode_A: "自營", Mode_B: "轉出", Mode_C: "轉入" };
@@ -854,94 +1004,6 @@ const firebaseConfig = {
             document.getElementById('pl-margin').innerText = plTotalRev > 0 ? ((plProfit / plTotalRev) * 100).toFixed(1) + "%" : "0%";
         }
     };
-
-    import("https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js").then(async (firebaseApp) => {
-        firestoreRef = await import("https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js");
-        const app = firebaseApp.initializeApp(firebaseConfig);
-        db = firestoreRef.getFirestore(app);
-
-        document.getElementById('statusText').innerText = "資料庫連線成功 🟢";
-        document.getElementById('statusText').classList.replace("text-slate-500", "text-emerald-600");
-
-        document.getElementById('confirmSaveBtn').addEventListener('click', () => {
-            const btn = document.getElementById('confirmSaveBtn');
-            btn.disabled = true; btn.innerText = "寫入中...";
-            try {
-                if (window.currentEditId) {
-                    firestoreRef.updateDoc(firestoreRef.doc(db, "orders", window.currentEditId), pendingData).catch(e => console.error(e));
-                } else {
-                    firestoreRef.addDoc(firestoreRef.collection(db, "orders"), pendingData).catch(e => console.error(e));
-                }
-            } finally {
-                modal.classList.add('hidden'); 
-                btn.innerText = "確認並存入"; btn.disabled = false;
-                window.resetFormUI();
-            }
-        });
-
-        window.deleteOrder = (id) => {
-            if (confirm('確定要刪除這筆訂單嗎？')) firestoreRef.deleteDoc(firestoreRef.doc(db, "orders", id));
-        };
-
-        window.togglePayment = (id, currentStatus) => {
-            const newStatus = currentStatus === 'paid' ? 'unpaid' : 'paid';
-            firestoreRef.updateDoc(firestoreRef.doc(db, "orders", id), { payment_status: newStatus });
-        };
-        
-        window.toggleCase = (id, currentStatus) => {
-            const newStatus = currentStatus === 'closed' ? 'open' : 'closed';
-            firestoreRef.updateDoc(firestoreRef.doc(db, "orders", id), { case_status: newStatus });
-        };
-
-        window.editOrder = (id) => {
-            const doc = window.allOrders.find(o => o.id === id);
-            if(!doc) return;
-            window.currentEditId = id;
-            const data = doc.data;
-            
-            document.getElementById('mode').value = data.mode;
-            document.getElementById('customer').value = data.customer || '';
-            
-            const savedCurrency = data.currency || 'AUD';
-            document.getElementById('currency').value = savedCurrency;
-            window.handleCurrencyChange(); 
-            document.getElementById('fxRate').value = data.fx_rate || 23; 
-            document.getElementById('fxRate').disabled = (savedCurrency === 'TWD');
-            
-            document.getElementById('unitPrice').value = data.unit_price || ''; 
-            document.getElementById('pax').value = data.pax || 1;
-            document.getElementById('amount').value = data.amount || data.aud || '';
-            
-            document.getElementById('cost').value = data.cost || '0';
-            document.getElementById('paymentStatus').value = data.payment_status || (data.status === 'completed' ? 'paid' : 'unpaid');
-            document.getElementById('caseStatus').value = data.case_status || (data.status === 'completed' ? 'closed' : 'open');
-            
-            document.getElementById('departureTime').value = data.departure_time || '';
-            document.getElementById('note').value = data.note || '';
-            document.getElementById('specialInfo').value = data.special_info || '';
-
-            if(window.currentTab === 'report' || window.currentTab === 'profit-loss') window.switchTab('dashboard');
-
-            document.getElementById('formTitle').innerText = "✏️ 修改訂單模式";
-            document.getElementById('formTitle').classList.replace("text-slate-800", "text-orange-600");
-            document.getElementById('formSection').classList.add("bg-orange-50", "border-orange-300");
-            document.getElementById('formSubmitBtn').innerText = "預覽並準備更新";
-            document.getElementById('formSubmitBtn').classList.replace("bg-emerald-600", "bg-orange-600");
-            document.getElementById('cancelEditBtn').classList.remove("hidden");
-            window.scrollTo({ top: 0, behavior: 'smooth' });
-        };
-
-        const q = firestoreRef.query(firestoreRef.collection(db, "orders")); 
-        firestoreRef.onSnapshot(q, (snapshot) => {
-            window.allOrders = [];
-            snapshot.forEach(doc => window.allOrders.push({ id: doc.id, data: doc.data() }));
-            window.renderUI(); 
-        });
-
-    }).catch(err => {
-        document.getElementById('statusText').innerText = "尚未設定 Firebase 金鑰或連線失敗 🔴";
-        document.getElementById('statusText').classList.replace("text-slate-500", "text-red-500");
-    });
 </script>
 </body>
 </html>
