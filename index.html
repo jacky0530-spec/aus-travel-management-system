@@ -58,12 +58,13 @@
         </header>
 
         <nav class="flex flex-wrap border-b border-slate-300 mb-6 bg-white rounded-t-lg overflow-hidden card-shadow no-print">
-            <button onclick="switchTab('dashboard')" id="tab-dashboard" class="nav-btn active flex-1 py-3 text-center text-slate-600 hover:bg-slate-50 transition min-w-[120px]">📊 首頁總覽</button>
-            <button onclick="switchTab('Mode_A')" id="tab-Mode_A" class="nav-btn flex-1 py-3 text-center text-slate-600 hover:bg-slate-50 transition min-w-[120px]">📦 自營接單 (A)</button>
-            <button onclick="switchTab('Mode_B')" id="tab-Mode_B" class="nav-btn flex-1 py-3 text-center text-slate-600 hover:bg-slate-50 transition min-w-[120px]">📤 轉給同業 (B)</button>
-            <button onclick="switchTab('Mode_C')" id="tab-Mode_C" class="nav-btn flex-1 py-3 text-center text-slate-600 hover:bg-slate-50 transition min-w-[120px]">📥 同業轉入 (C)</button>
-            <button onclick="switchTab('report')" id="tab-report" class="nav-btn flex-1 py-3 text-center text-slate-600 hover:bg-slate-50 transition min-w-[120px]">📈 出發報表</button>
-            <button onclick="switchTab('profit-loss')" id="tab-profit-loss" class="nav-btn flex-1 py-3 text-center text-slate-600 hover:bg-slate-50 transition min-w-[120px]">💰 損益報表</button>
+            <button onclick="switchTab('dashboard')" id="tab-dashboard" class="nav-btn active flex-1 py-3 text-center text-slate-600 hover:bg-slate-50 transition min-w-[100px]">📊 首頁總覽</button>
+            <button onclick="switchTab('Mode_A')" id="tab-Mode_A" class="nav-btn flex-1 py-3 text-center text-slate-600 hover:bg-slate-50 transition min-w-[100px]">📦 自營接單 (A)</button>
+            <button onclick="switchTab('Mode_B')" id="tab-Mode_B" class="nav-btn flex-1 py-3 text-center text-slate-600 hover:bg-slate-50 transition min-w-[100px]">📤 轉給同業 (B)</button>
+            <button onclick="switchTab('Mode_C')" id="tab-Mode_C" class="nav-btn flex-1 py-3 text-center text-slate-600 hover:bg-slate-50 transition min-w-[100px]">📥 同業轉入 (C)</button>
+            <button onclick="switchTab('Mode_D')" id="tab-Mode_D" class="nav-btn flex-1 py-3 text-center text-slate-600 hover:bg-slate-50 transition min-w-[100px]">🎟️ 門票飯店 (D)</button>
+            <button onclick="switchTab('report')" id="tab-report" class="nav-btn flex-1 py-3 text-center text-slate-600 hover:bg-slate-50 transition min-w-[100px]">📈 出發報表</button>
+            <button onclick="switchTab('profit-loss')" id="tab-profit-loss" class="nav-btn flex-1 py-3 text-center text-slate-600 hover:bg-slate-50 transition min-w-[100px]">💰 損益報表</button>
         </nav>
 
         <div id="inputSection" class="no-print">
@@ -84,13 +85,26 @@
                             <option value="Mode_A">Mode A: 自營自出</option>
                             <option value="Mode_B">Mode B: 轉給同業</option>
                             <option value="Mode_C">Mode C: 同業轉入</option>
+                            <option value="Mode_D">Mode D: 門票 飯店販售</option>
                         </select>
                     </div>
-                    <div class="md:col-span-3">
+                    <div class="md:col-span-2">
+                        <label class="block text-xs font-medium text-slate-700">產品分類</label>
+                        <select id="category" class="mt-1 block w-full p-2 border border-slate-300 rounded-md bg-slate-50 text-sm font-bold text-purple-700">
+                            <option value="">-- 無特定分類 --</option>
+                            <option value="接送機">✈️ 接送機</option>
+                            <option value="一日遊">🚗 一日遊</option>
+                            <option value="多日遊">🚌 多日遊</option>
+                            <option value="包車">🚘 包車</option>
+                            <option value="門票">🎟️ 門票</option>
+                            <option value="飯店販售">🏨 飯店販售</option>
+                        </select>
+                    </div>
+                    <div class="md:col-span-2">
                         <label class="block text-xs font-medium text-slate-700">旅客姓名/單號</label>
                         <input type="text" id="customer" class="mt-1 block w-full p-2 border border-slate-300 rounded-md text-sm" required>
                     </div>
-                    <div class="md:col-span-3">
+                    <div class="md:col-span-2">
                         <label class="block text-xs font-medium text-slate-700">出發時間</label>
                         <input type="text" id="departureTime" placeholder="YYYY-MM-DD" class="mt-1 block w-full p-2 border border-slate-300 rounded-md bg-yellow-50 focus:bg-white text-sm font-bold text-slate-800">
                     </div>
@@ -120,11 +134,19 @@
                         <input type="number" step="0.001" id="fxRate" value="23" class="mt-1 block w-full p-2 border border-slate-300 rounded-md text-sm" required>
                     </div>
 
-                    <div class="md:col-span-2">
-                        <label class="block text-xs font-medium text-slate-700">成本 (預設0)</label>
-                        <input type="number" step="0.01" id="cost" value="0" class="mt-1 block w-full p-2 border border-red-300 bg-red-50 text-red-700 font-bold rounded-md text-sm" required>
+                    <div class="md:col-span-1">
+                        <label class="block text-xs font-medium text-red-800">司機成本</label>
+                        <input type="number" step="0.01" id="costDriver" value="0" class="mt-1 block w-full p-2 border border-red-200 bg-red-50 text-red-700 font-bold rounded-md text-sm" required>
                     </div>
-                    <div class="md:col-span-3">
+                    <div class="md:col-span-1">
+                        <label class="block text-xs font-medium text-red-800">油錢成本</label>
+                        <input type="number" step="0.01" id="costFuel" value="0" class="mt-1 block w-full p-2 border border-red-200 bg-red-50 text-red-700 font-bold rounded-md text-sm" required>
+                    </div>
+                    <div class="md:col-span-1">
+                        <label class="block text-xs font-medium text-red-800">門票成本</label>
+                        <input type="number" step="0.01" id="costTicket" value="0" class="mt-1 block w-full p-2 border border-red-200 bg-red-50 text-red-700 font-bold rounded-md text-sm" required>
+                    </div>
+                    <div class="md:col-span-2">
                         <label class="block text-xs font-medium text-slate-700">收款狀態</label>
                         <select id="paymentStatus" class="mt-1 block w-full p-2 border border-slate-300 rounded-md bg-slate-50 text-sm" required>
                             <option value="unpaid">❌ 未收款 (Pending)</option>
@@ -156,7 +178,7 @@
             </section>
         </div>
 
-        <main id="view-dashboard" class="view-section grid grid-cols-1 lg:grid-cols-3 gap-6 no-print">
+        <main id="view-dashboard" class="view-section grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4 no-print">
             <section class="bg-white rounded-xl border border-emerald-200 overflow-hidden shadow-sm flex flex-col max-h-[800px]">
                 <div class="bg-emerald-50 p-3 border-b border-emerald-100 flex-shrink-0"><h3 class="font-bold text-emerald-800">📦 自營接單 (A)</h3></div>
                 <div id="dash-mode-a" class="p-4 space-y-4 overflow-y-auto no-scrollbar flex-grow"></div>
@@ -168,6 +190,10 @@
             <section class="bg-white rounded-xl border border-purple-200 overflow-hidden shadow-sm flex flex-col max-h-[800px]">
                 <div class="bg-purple-50 p-3 border-b border-purple-100 flex-shrink-0"><h3 class="font-bold text-purple-800">📥 同業轉入 (C)</h3></div>
                 <div id="dash-mode-c" class="p-4 space-y-4 overflow-y-auto no-scrollbar flex-grow"></div>
+            </section>
+            <section class="bg-white rounded-xl border border-blue-200 overflow-hidden shadow-sm flex flex-col max-h-[800px]">
+                <div class="bg-blue-50 p-3 border-b border-blue-100 flex-shrink-0"><h3 class="font-bold text-blue-800">🎟️ 門票 飯店販售 (D)</h3></div>
+                <div id="dash-mode-d" class="p-4 space-y-4 overflow-y-auto no-scrollbar flex-grow"></div>
             </section>
         </main>
 
@@ -196,6 +222,7 @@
                     <option value="Mode_A">📦 自營接單 (A)</option>
                     <option value="Mode_B">📤 轉給同業 (B)</option>
                     <option value="Mode_C">📥 同業轉入 (C)</option>
+                    <option value="Mode_D">🎟️ 門票飯店 (D)</option>
                 </select>
                 <select id="reportFilter" class="p-2 border border-slate-300 rounded text-sm bg-slate-50" onchange="renderUI()">
                     <option value="all">結案狀態：全部</option>
@@ -207,7 +234,7 @@
             </div>
 
             <div id="report-container" class="bg-white rounded-xl overflow-hidden p-2 report-container">
-                <h2 id="reportHeaderTitle" class="text-2xl font-bold text-center text-slate-800 py-4 hidden print:block">澳洲旅遊業務出發報表 (全部出發時間)</h2>
+                <h2 id="reportHeaderTitle" class="text-2xl font-bold text-center text-slate-800 py-4 hidden print:block">澳洲旅遊業務出發報表</h2>
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
                     <div class="bg-slate-50 p-5 rounded-xl border border-slate-200 border-l-4 border-l-blue-500">
                         <p class="text-sm text-slate-500 mb-1">符合條件訂單數</p>
@@ -227,7 +254,7 @@
                         <thead>
                             <tr class="bg-slate-800 text-white">
                                 <th class="p-3">雙狀態</th>
-                                <th class="p-3">模式</th>
+                                <th class="p-3">模式/分類</th>
                                 <th class="p-3">姓名/單號</th>
                                 <th class="p-3">出發時間</th>
                                 <th class="p-3 text-right">金額明細 (含成本)</th>
@@ -255,6 +282,7 @@
                     <option value="Mode_A">📦 自營接單 (A)</option>
                     <option value="Mode_B">📤 轉給同業 (B)</option>
                     <option value="Mode_C">📥 同業轉入 (C)</option>
+                    <option value="Mode_D">🎟️ 門票飯店 (D)</option>
                 </select>
                 <select id="plFilter" class="p-2 border border-slate-300 rounded text-sm bg-slate-50" onchange="renderUI()">
                     <option value="all">結案狀態：全部</option>
@@ -265,7 +293,7 @@
             </div>
 
             <div id="pl-container" class="bg-white rounded-xl overflow-hidden p-2 report-container">
-                <h2 id="plHeaderTitle" class="text-2xl font-bold text-center text-slate-800 py-4 hidden print:block">澳洲旅遊業務損益表 (全部時間)</h2>
+                <h2 id="plHeaderTitle" class="text-2xl font-bold text-center text-slate-800 py-4 hidden print:block">澳洲旅遊業務損益表</h2>
                 <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
                     <div class="bg-slate-50 p-4 rounded-xl border border-slate-200 border-l-4 border-l-blue-500">
                         <p class="text-sm text-slate-500 mb-1">總營收 (TWD)</p>
@@ -292,7 +320,7 @@
                                 <th class="p-3">姓名/單號</th>
                                 <th class="p-3">出發時間</th>
                                 <th class="p-3 text-right">營收</th>
-                                <th class="p-3 text-right">成本</th>
+                                <th class="p-3 text-right">成本細目</th>
                                 <th class="p-3 text-right">毛利</th>
                                 <th class="p-3 text-center">毛利率</th>
                             </tr>
@@ -308,13 +336,14 @@
         <div class="bg-white p-8 rounded-2xl shadow-2xl max-w-md w-full">
             <h2 class="text-xl font-bold text-slate-800 border-b pb-3 mb-4" id="modalTitle">確認訂單資訊</h2>
             <div class="space-y-2 text-slate-700 text-sm">
-                <p><strong>模式：</strong> <span id="modalMode" class="text-blue-600"></span></p>
+                <p><strong>模式與分類：</strong> <span id="modalMode" class="text-blue-600"></span> <span id="modalCategory" class="text-purple-600 font-bold"></span></p>
                 <p><strong>姓名/單號：</strong> <span id="modalCustomer"></span></p>
                 <p><strong>單價與人數：</strong> <span id="modalUnitPax" class="font-bold text-blue-600"></span></p>
                 <p><strong>出發時間：</strong> ⏰ <span id="modalDeparture" class="font-bold text-orange-600"></span></p>
-                <div class="flex space-x-4">
-                    <p><strong>總營收：</strong> <span id="modalAmount" class="font-bold text-lg"></span></p>
-                    <p class="text-red-600"><strong>成本：</strong> <span id="modalCost" class="font-bold text-lg"></span></p>
+                <div class="bg-slate-50 p-3 rounded-lg border border-slate-200 space-y-1">
+                    <p><strong>總營收金額：</strong> <span id="modalAmount" class="font-bold text-lg text-slate-800"></span></p>
+                    <p class="text-red-600 text-xs"><strong>成本細目：</strong> <span id="modalCostBreakdown" class="font-bold"></span></p>
+                    <p class="text-red-700"><strong>總計成本：</strong> <span id="modalCost" class="font-bold text-lg"></span></p>
                 </div>
                 <p><strong>折合台幣：</strong> NT$ <span id="modalTwd" class="font-bold text-emerald-600 text-lg"></span></p>
                 <div class="flex space-x-4 mt-2">
@@ -335,7 +364,7 @@
     import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
     import { getFirestore, collection, addDoc, onSnapshot, query, doc, updateDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-    // ⚠️ 請填入您的 Firebase 金鑰
+    // ⚠️ 請在此填入您的 Firebase 設定金鑰
 const firebaseConfig = {
   apiKey: "AIzaSyCBKoPGs0TW6VI1Ws3-61USpjARQR-O8Mc",
   authDomain: "aus-travel-system.firebaseapp.com",
@@ -353,9 +382,7 @@ const firebaseConfig = {
     window.allOrders = []; 
     let unsubscribeSnapshot = null;
 
-    // ================= 登入與記住帳號功能 =================
-    
-    // 網頁載入時檢查是否有暫存帳號
+    // ================= 登入與記住帳號 =================
     window.addEventListener('DOMContentLoaded', () => {
         const savedEmail = localStorage.getItem('savedTravelAppEmail');
         if (savedEmail) {
@@ -376,9 +403,6 @@ const firebaseConfig = {
                 window.allOrders = [];
                 snapshot.forEach(d => window.allOrders.push({ id: d.id, data: d.data() }));
                 window.renderUI(); 
-            }, (error) => {
-                console.error("讀取失敗:", error);
-                alert("資料讀取失敗，請確認已將資料庫規則設為 if request.auth != null;");
             });
         } else {
             document.getElementById('loginScreen').classList.remove('hidden');
@@ -394,38 +418,24 @@ const firebaseConfig = {
         const errObj = document.getElementById('loginError');
         
         if(!email || !pass) {
-            errObj.innerText = "請輸入帳號和密碼！";
-            errObj.classList.remove('hidden');
-            return;
+            errObj.innerText = "請輸入帳號和密碼！"; errObj.classList.remove('hidden'); return;
         }
-        
         try {
             document.getElementById('loginBtn').innerText = "登入中...";
             await signInWithEmailAndPassword(auth, email, pass);
             errObj.classList.add('hidden');
-            
-            // 處理「記住帳號」的邏輯
-            if (remember) {
-                localStorage.setItem('savedTravelAppEmail', email);
-            } else {
-                localStorage.removeItem('savedTravelAppEmail');
-            }
-            // 密碼的部分請交給瀏覽器的彈窗提示儲存，切勿寫入 localStorage
-            
+            if (remember) localStorage.setItem('savedTravelAppEmail', email);
+            else localStorage.removeItem('savedTravelAppEmail');
         } catch (error) {
-            console.error(error);
-            errObj.innerText = "登入失敗：帳號或密碼錯誤。";
-            errObj.classList.remove('hidden');
+            errObj.innerText = "登入失敗：帳號或密碼錯誤。"; errObj.classList.remove('hidden');
         } finally {
             document.getElementById('loginBtn').innerText = "登入系統";
         }
     });
 
-    document.getElementById('logoutBtn').addEventListener('click', () => {
-        signOut(auth).catch(err => console.log(err));
-    });
+    document.getElementById('logoutBtn').addEventListener('click', () => signOut(auth));
 
-    // ================= 輔助函式與解析邏輯 =================
+    // ================= 計算與輔助邏輯 =================
     window.getTodayFormatted = () => {
         const today = new Date();
         const yyyy = today.getFullYear();
@@ -462,11 +472,10 @@ const firebaseConfig = {
         document.querySelectorAll('.view-section').forEach(view => view.classList.add('hidden'));
 
         const inputSec = document.getElementById('inputSection');
-        if (tabName === 'report' || tabName === 'profit-loss') {
-            inputSec.classList.add('hidden');
-        } else {
+        if (tabName === 'report' || tabName === 'profit-loss') inputSec.classList.add('hidden');
+        else {
             inputSec.classList.remove('hidden');
-            if (['Mode_A', 'Mode_B', 'Mode_C'].includes(tabName)) document.getElementById('mode').value = tabName;
+            if (['Mode_A', 'Mode_B', 'Mode_C', 'Mode_D'].includes(tabName)) document.getElementById('mode').value = tabName;
         }
 
         if (tabName === 'dashboard') document.getElementById('view-dashboard').classList.remove('hidden');
@@ -474,7 +483,7 @@ const firebaseConfig = {
         else if (tabName === 'profit-loss') document.getElementById('view-profit-loss').classList.remove('hidden');
         else {
             document.getElementById('view-single-mode').classList.remove('hidden');
-            const titles = { Mode_A: "📦 自營接單 (A)", Mode_B: "📤 轉給同業 (B)", Mode_C: "📥 同業轉入 (C)" };
+            const titles = { Mode_A: "📦 自營接單 (A)", Mode_B: "📤 轉給同業 (B)", Mode_C: "📥 同業轉入 (C)", Mode_D: "🎟️ 門票 飯店販售 (D)" };
             document.getElementById('single-mode-title').innerText = titles[tabName];
         }
         window.renderUI(); 
@@ -485,7 +494,6 @@ const firebaseConfig = {
         const mp = document.getElementById(`${prefix}MonthPicker`).value;
         const dp = document.getElementById(`${prefix}DatePicker`).value;
         const header = document.getElementById(`${prefix === 'report' ? 'reportHeaderTitle' : 'plHeaderTitle'}`);
-        
         const titleBase = prefix === 'report' ? '澳洲旅遊業務出發報表' : '澳洲旅遊業務損益表';
         if (type === 'all') header.innerText = `${titleBase} (全部時間)`;
         else if (type === 'month') header.innerText = `${titleBase} (${mp})`;
@@ -498,7 +506,6 @@ const firebaseConfig = {
         const dp = document.getElementById(`${prefix}DatePicker`);
         mp.classList.toggle('hidden', type !== 'month');
         dp.classList.toggle('hidden', type !== 'day');
-        
         const today = new Date();
         const yyyy = today.getFullYear();
         const mm = String(today.getMonth() + 1).padStart(2, '0');
@@ -511,7 +518,6 @@ const firebaseConfig = {
         const containerId = viewType === 'report' ? 'report-container' : 'pl-container';
         const prefix = viewType === 'report' ? 'report' : 'pl';
         const titleId = viewType === 'report' ? 'reportHeaderTitle' : 'plHeaderTitle';
-        
         const container = document.getElementById(containerId);
         document.getElementById(titleId).classList.remove('hidden'); 
         const noPrintElements = container.querySelectorAll('.no-print');
@@ -523,31 +529,25 @@ const firebaseConfig = {
             let dateSuffix = '全部';
             if (type === 'month') dateSuffix = document.getElementById(`${prefix}MonthPicker`).value;
             else if (type === 'day') dateSuffix = document.getElementById(`${prefix}DatePicker`).value;
-
-            const filePrefix = viewType === 'report' ? '出發報表' : '損益報表';
-            link.download = `旅遊${filePrefix}_${dateSuffix}.png`;
-            link.href = canvas.toDataURL('image/png');
-            link.click();
+            link.download = `旅遊${viewType === 'report' ? '出發報表' : '損益報表'}_${dateSuffix}.png`;
+            link.href = canvas.toDataURL('image/png'); link.click();
             document.getElementById(titleId).classList.add('hidden');
             noPrintElements.forEach(el => el.style.display = '');
         });
     };
 
     window.resetFormUI = () => {
-        window.currentEditId = null;
-        document.getElementById('orderForm').reset();
-        
-        document.getElementById('currency').value = 'AUD';
-        window.handleCurrencyChange();
-        
+        window.currentEditId = null; document.getElementById('orderForm').reset();
+        document.getElementById('currency').value = 'AUD'; window.handleCurrencyChange();
         document.getElementById('rawOrderText').value = '';
         document.getElementById('departureTime').value = window.getTodayFormatted(); 
-        
-        document.getElementById('cost').value = '0';
-        document.getElementById('paymentStatus').value = 'unpaid';
-        document.getElementById('caseStatus').value = 'open';
+        document.getElementById('costDriver').value = '0';
+        document.getElementById('costFuel').value = '0';
+        document.getElementById('costTicket').value = '0';
+        document.getElementById('category').value = '';
+        document.getElementById('paymentStatus').value = 'unpaid'; document.getElementById('caseStatus').value = 'open';
 
-        if (['Mode_A', 'Mode_B', 'Mode_C'].includes(window.currentTab)) document.getElementById('mode').value = window.currentTab;
+        if (['Mode_A', 'Mode_B', 'Mode_C', 'Mode_D'].includes(window.currentTab)) document.getElementById('mode').value = window.currentTab;
 
         const formTitle = document.getElementById('formTitle');
         formTitle.innerText = "🆕 快速錄入新訂單";
@@ -561,19 +561,29 @@ const firebaseConfig = {
 
     document.getElementById('cancelEditBtn').addEventListener('click', window.resetFormUI);
 
+    // ================= ⚡ 智慧文字解析引擎 =================
     document.getElementById('parseBtn').addEventListener('click', () => {
         const rawText = document.getElementById('rawOrderText').value;
         if(!rawText) return alert("請先貼上文字");
 
         let mode = document.getElementById('mode').value; 
         let customer = ''; let amount = ''; let special = ''; let pax = 1; let note = ''; let departureTime = window.getTodayFormatted(); let unitPrice = '';
-        let currency = 'AUD';
+        let currency = 'AUD'; let category = ''; 
         
         const upperText = rawText.toUpperCase();
         if (upperText.includes("FLIGGY") || upperText.includes("LITTLE FOX")) mode = 'Mode_B'; 
         if (rawText.includes("第三方平台") || rawText.includes("更改者資料")) mode = 'Mode_C'; 
         if (rawText.includes("我的預訂網站")) mode = 'Mode_A';
+        if (rawText.includes("飯店販售") || rawText.includes("酒店販售") || rawText.includes("前台售")) mode = 'Mode_D';
 
+        if (rawText.includes("接機") || rawText.includes("送機") || rawText.includes("接送機") || upperText.includes("TRANSFER")) category = '接送機';
+        else if (rawText.includes("一日遊") || rawText.includes("當天往返")) category = '一日遊';
+        else if (rawText.includes("多日遊") || rawText.includes("二日遊") || rawText.includes("三日遊")) category = '多日遊';
+        else if (rawText.includes("包車") || rawText.includes("專車")) category = '包車';
+        else if (rawText.includes("門票") || rawText.includes("景點票") || rawText.includes("票券")) category = '門票';
+        else if (rawText.includes("飯店") || rawText.includes("酒店") || rawText.includes("住宿") || rawText.includes("房間")) category = '飯店販售';
+
+        if ((category === '門票' || category === '飯店販售') && mode === 'Mode_A') mode = 'Mode_D';
         if (upperText.includes("RMB") || upperText.includes("人民幣") || rawText.includes("¥")) currency = 'CNY';
         if (upperText.includes("NT$") || upperText.includes("TWD") || upperText.includes("台幣")) currency = 'TWD';
 
@@ -581,75 +591,44 @@ const firebaseConfig = {
         const orderMatch = rawText.match(/訂單詳情\s*-\s*([A-Z0-9]+)/);
         if (nameMatch) customer = nameMatch[1].trim();
         else if (orderMatch) customer = orderMatch[1].trim();
-        else if (rawText.includes("CHUANG MIN CHI")) customer = "莊閔淇 CHUANG MIN CHI"; 
-        else if (rawText.includes("LIAO HSIAO CHING")) customer = "廖筱菁 LIAO HSIAO CHING";
         
         let notesArr = [];
-        const detailMatch = rawText.match(/訂單詳情[^\n]+/);
-        if (detailMatch) notesArr.push(detailMatch[0].trim()); 
-        const tripMatch = rawText.match(/行程-([^\n]+)/);
-        if (tripMatch) notesArr.push(tripMatch[0].trim()); 
-        const paymentMatch = rawText.match(/(付款方式-[^]*)/);
-        if (paymentMatch) notesArr.push("\n---金流---\n" + paymentMatch[1].trim());
-
+        const detailMatch = rawText.match(/訂單詳情[^\n]+/); if (detailMatch) notesArr.push(detailMatch[0].trim()); 
+        const tripMatch = rawText.match(/行程-([^\n]+)/); if (tripMatch) notesArr.push(tripMatch[0].trim()); 
+        const paymentMatch = rawText.match(/(付款方式-[^]*)/); if (paymentMatch) notesArr.push("\n---金流---\n" + paymentMatch[1].trim());
         note = notesArr.length > 0 ? notesArr.join("\n") : "自動解析匯入";
 
         const unitPaxMatch = rawText.match(/(?:A\$|\$|¥|RMB|NT\$|人民幣)\s*([0-9.]+)\s*[xX×*]\s*(\d+)/);
         if (unitPaxMatch) {
-            unitPrice = unitPaxMatch[1];
-            pax = unitPaxMatch[2];
-            amount = (parseFloat(unitPrice) * parseInt(pax)).toFixed(2);
+            unitPrice = unitPaxMatch[1]; pax = unitPaxMatch[2]; amount = (parseFloat(unitPrice) * parseInt(pax)).toFixed(2);
         } else {
-            const paxMatch = rawText.match(/(\d+)\s*位/) || rawText.match(/人數[：:]\s*(\d+)/);
-            if (paxMatch) pax = paxMatch[1]; else if (rawText.includes("5大4小")) pax = 9;
-            const totalMatch = rawText.match(/(?:費用|共計|總計)[^\d]*([0-9.]+)/) || rawText.match(/=([0-9.]+)[澳元塊]/) || rawText.match(/(?:A\$|\$|¥|RMB|NT\$)\s*([0-9.]+)/);
-            if (totalMatch) amount = totalMatch[1];
+            const paxMatch = rawText.match(/(\d+)\s*位/) || rawText.match(/人數[：:]\s*(\d+)/); if (paxMatch) pax = paxMatch[1];
+            const totalMatch = rawText.match(/(?:費用|共計|總計)[^\d]*([0-9.]+)/) || rawText.match(/=([0-9.]+)[澳元塊]/) || rawText.match(/(?:A\$|\$|¥|RMB|NT\$)\s*([0-9.]+)/); if (totalMatch) amount = totalMatch[1];
         }
 
         const dateRegex = /([0-9]{4})[-/年]([0-9]{1,2})[-/月]([0-9]{1,2})[日號]?|([0-9]{1,2})[-/月]([0-9]{1,2})[日號]?/;
-        const depLine = rawText.match(/出發(?:時間|日期)[^\n]+/);
-        const dateLine = rawText.match(/日期[：:-][^\n]+/);
+        const depLine = rawText.match(/出發(?:時間|日期)[^\n]+/); const dateLine = rawText.match(/日期[：:-][^\n]+/);
         let targetLine = (depLine ? depLine[0] : null) || (dateLine ? dateLine[0] : null);
-        let dateMatch;
-        
-        if (targetLine) dateMatch = targetLine.match(dateRegex);
-        else dateMatch = rawText.match(dateRegex); 
+        let dateMatch = targetLine ? targetLine.match(dateRegex) : rawText.match(dateRegex);
 
         if (dateMatch) {
             let y, m, d;
-            if (dateMatch[1]) { 
-                y = dateMatch[1]; m = dateMatch[2]; d = dateMatch[3];
-            } else if (dateMatch[4]) { 
-                y = new Date().getFullYear(); m = dateMatch[4]; d = dateMatch[5];
-            }
+            if (dateMatch[1]) { y = dateMatch[1]; m = dateMatch[2]; d = dateMatch[3]; } 
+            else if (dateMatch[4]) { y = new Date().getFullYear(); m = dateMatch[4]; d = dateMatch[5]; }
             if (m && d) departureTime = `${y}-${m.padStart(2, '0')}-${d.padStart(2, '0')}`;
-            if (targetLine) {
-                const timeStrMatch = targetLine.match(/([0-2]?[0-9]:[0-5][0-9](?:[aApP][mM])?)/i);
-                if (timeStrMatch) departureTime += " " + timeStrMatch[1];
-            }
         }
 
-        const weightMatch = rawText.match(/(\d{2,3}kg)/i);
-        if (weightMatch) special += weightMatch[1] + " ";
-
-        document.getElementById('mode').value = mode;
-        if(customer) document.getElementById('customer').value = customer;
-        document.getElementById('pax').value = pax;
-        
-        document.getElementById('currency').value = currency;
-        window.handleCurrencyChange();
-
-        document.getElementById('unitPrice').value = unitPrice; 
-        if(amount) document.getElementById('amount').value = amount;
-        
-        document.getElementById('note').value = note;
-        document.getElementById('departureTime').value = departureTime; 
-        if(special) document.getElementById('specialInfo').value = special.trim();
+        document.getElementById('mode').value = mode; document.getElementById('category').value = category;
+        if(customer) document.getElementById('customer').value = customer; document.getElementById('pax').value = pax;
+        document.getElementById('currency').value = currency; window.handleCurrencyChange();
+        document.getElementById('unitPrice').value = unitPrice; if(amount) document.getElementById('amount').value = amount;
+        document.getElementById('note').value = note; document.getElementById('departureTime').value = departureTime;
     });
 
     document.getElementById('orderForm').addEventListener('submit', (e) => {
         e.preventDefault(); 
         const modeVal = document.getElementById('mode').value;
+        const categoryVal = document.getElementById('category').value;
         const currencyVal = document.getElementById('currency').value;
         const paxVal = parseInt(document.getElementById('pax').value) || 1;
         const unitVal = parseFloat(document.getElementById('unitPrice').value) || null;
@@ -657,41 +636,35 @@ const firebaseConfig = {
         const fxVal = parseFloat(document.getElementById('fxRate').value) || 1;
         const twdVal = Math.round(amountVal * fxVal) || 0;
         
-        const costVal = parseFloat(document.getElementById('cost').value) || 0;
+        // 核心更新：讀取並計算細分成本
+        const cDriver = parseFloat(document.getElementById('costDriver').value) || 0;
+        const cFuel = parseFloat(document.getElementById('costFuel').value) || 0;
+        const cTicket = parseFloat(document.getElementById('costTicket').value) || 0;
+        const totalCostVal = cDriver + cFuel + cTicket;
+
         const paymentStatusVal = document.getElementById('paymentStatus').value;
         const caseStatusVal = document.getElementById('caseStatus').value;
-
         const existingOrder = window.currentEditId ? window.allOrders.find(o => o.id === window.currentEditId) : null;
         const currentTimestamp = existingOrder ? existingOrder.data.timestamp : new Date();
 
         window.pendingData = {
-            mode: modeVal,
-            customer: document.getElementById('customer').value,
-            pax: paxVal,
-            currency: currencyVal,
-            unit_price: unitVal, 
-            amount: amountVal,
-            aud: amountVal,
-            fx_rate: fxVal,
-            twd: twdVal,
-            cost: costVal,
-            payment_status: paymentStatusVal,
-            case_status: caseStatusVal,
-            departure_time: document.getElementById('departureTime').value, 
-            note: document.getElementById('note').value,
-            special_info: document.getElementById('specialInfo').value,
-            status: 'completed',
-            timestamp: currentTimestamp 
+            mode: modeVal, category: categoryVal, customer: document.getElementById('customer').value, pax: paxVal, currency: currencyVal, unit_price: unitVal, amount: amountVal, aud: amountVal, fx_rate: fxVal, twd: twdVal,
+            cost_driver: cDriver, cost_fuel: cFuel, cost_ticket: cTicket, cost: totalCostVal, // 加總寫入
+            payment_status: paymentStatusVal, case_status: caseStatusVal, departure_time: document.getElementById('departureTime').value, note: document.getElementById('note').value, special_info: document.getElementById('specialInfo').value, status: 'completed', timestamp: currentTimestamp 
         };
 
         const currSymbol = { AUD: 'A$', CNY: '¥', TWD: 'NT$' }[currencyVal] || 'A$';
-
         document.getElementById('modalTitle').innerText = window.currentEditId ? "確認更新訂單" : "確認新增訂單";
         document.getElementById('modalMode').innerText = document.getElementById('mode').options[document.getElementById('mode').selectedIndex].text;
+        document.getElementById('modalCategory').innerText = categoryVal ? `[${categoryVal}]` : '';
         document.getElementById('modalCustomer').innerText = window.pendingData.customer;
         document.getElementById('modalUnitPax').innerText = unitVal ? `單價 ${currSymbol} ${unitVal} × ${paxVal} 人` : `${paxVal} 人`;
         document.getElementById('modalAmount').innerText = `${currSymbol} ${amountVal}`;
-        document.getElementById('modalCost').innerText = `${currSymbol} ${costVal}`;
+        
+        // 彈窗細目顯示
+        document.getElementById('modalCostBreakdown').innerText = `司機:${cDriver} + 油錢:${cFuel} + 門票:${cTicket}`;
+        document.getElementById('modalCost').innerText = `${currSymbol} ${totalCostVal.toFixed(2)}`;
+        
         document.getElementById('modalTwd').innerText = window.pendingData.twd.toLocaleString();
         document.getElementById('modalPaymentStatus').innerText = paymentStatusVal === 'paid' ? '✅ 已收款' : '❌ 未收款';
         document.getElementById('modalCaseStatus').innerText = caseStatusVal === 'closed' ? '📁 已結案' : '⏳ 未結案';
@@ -703,77 +676,50 @@ const firebaseConfig = {
 
     document.getElementById('cancelBtn').addEventListener('click', () => document.getElementById('confirmModal').classList.add('hidden') );
 
-    // ================= 寫入與渲染 =================
+    // ================= 寫入與即時渲染引擎 =================
     const getTimestampMs = (ts) => {
         if (!ts) return 0;
         if (ts.toMillis) return ts.toMillis();
         if (ts.toDate) return ts.toDate().getTime();
-        if (ts.seconds) return ts.seconds * 1000;
         return new Date(ts).getTime();
     };
 
     document.getElementById('confirmSaveBtn').addEventListener('click', async () => {
-        const btn = document.getElementById('confirmSaveBtn');
-        btn.disabled = true; btn.innerText = "寫入中...";
+        const btn = document.getElementById('confirmSaveBtn'); btn.disabled = true; btn.innerText = "寫入中...";
         try {
-            if (window.currentEditId) {
-                await updateDoc(doc(db, "orders", window.currentEditId), window.pendingData);
-            } else {
-                await addDoc(collection(db, "orders"), window.pendingData);
-            }
-        } catch (e) {
-            console.error(e);
-            alert("寫入失敗，請確認您已經登入，且資料庫規則正確。");
-        } finally {
-            document.getElementById('confirmModal').classList.add('hidden'); 
-            btn.innerText = "確認並存入"; btn.disabled = false;
-            window.resetFormUI();
-        }
+            if (window.currentEditId) { await updateDoc(doc(db, "orders", window.currentEditId), window.pendingData); } 
+            else { await addDoc(collection(db, "orders"), window.pendingData); }
+        } catch (e) { alert("寫入失敗，請確認登入狀態。"); } 
+        finally { document.getElementById('confirmModal').classList.add('hidden'); btn.innerText = "確認並存入"; btn.disabled = false; window.resetFormUI(); }
     });
 
-    window.deleteOrder = async (id) => {
-        if (confirm('確定要刪除這筆訂單嗎？')) await deleteDoc(doc(db, "orders", id));
-    };
-
-    window.togglePayment = async (id, currentStatus) => {
-        const newStatus = currentStatus === 'paid' ? 'unpaid' : 'paid';
-        await updateDoc(doc(db, "orders", id), { payment_status: newStatus });
-    };
-    
-    window.toggleCase = async (id, currentStatus) => {
-        const newStatus = currentStatus === 'closed' ? 'open' : 'closed';
-        await updateDoc(doc(db, "orders", id), { case_status: newStatus });
-    };
+    window.deleteOrder = async (id) => { if (confirm('確定要刪除這筆訂單嗎？')) await deleteDoc(doc(db, "orders", id)); };
+    window.togglePayment = async (id, currentStatus) => { await updateDoc(doc(db, "orders", id), { payment_status: currentStatus === 'paid' ? 'unpaid' : 'paid' }); };
+    window.toggleCase = async (id, currentStatus) => { await updateDoc(doc(db, "orders", id), { case_status: currentStatus === 'closed' ? 'open' : 'closed' }); };
 
     window.editOrder = (id) => {
-        const dataDoc = window.allOrders.find(o => o.id === id);
-        if(!dataDoc) return;
-        window.currentEditId = id;
-        const data = dataDoc.data;
+        const dataDoc = window.allOrders.find(o => o.id === id); if(!dataDoc) return;
+        window.currentEditId = id; const data = dataDoc.data;
         
-        document.getElementById('mode').value = data.mode;
+        document.getElementById('mode').value = data.mode; document.getElementById('category').value = data.category || '';
         document.getElementById('customer').value = data.customer || '';
-        
-        const savedCurrency = data.currency || 'AUD';
-        document.getElementById('currency').value = savedCurrency;
-        window.handleCurrencyChange(); 
-        document.getElementById('fxRate').value = data.fx_rate || 23; 
+        const savedCurrency = data.currency || 'AUD'; document.getElementById('currency').value = savedCurrency;
+        window.handleCurrencyChange(); document.getElementById('fxRate').value = data.fx_rate || 23; 
         document.getElementById('fxRate').disabled = (savedCurrency === 'TWD');
-        
-        document.getElementById('unitPrice').value = data.unit_price || ''; 
-        document.getElementById('pax').value = data.pax || 1;
+        document.getElementById('unitPrice').value = data.unit_price || ''; document.getElementById('pax').value = data.pax || 1;
         document.getElementById('amount').value = data.amount || data.aud || '';
         
-        document.getElementById('cost').value = data.cost || '0';
+        // 核心更新：回填修改資料時的細分成本
+        document.getElementById('costDriver').value = data.cost_driver || '0';
+        document.getElementById('costFuel').value = data.cost_fuel || '0';
+        document.getElementById('costTicket').value = data.cost_ticket || '0';
+        
         document.getElementById('paymentStatus').value = data.payment_status || (data.status === 'completed' ? 'paid' : 'unpaid');
         document.getElementById('caseStatus').value = data.case_status || (data.status === 'completed' ? 'closed' : 'open');
-        
-        document.getElementById('departureTime').value = data.departure_time || '';
-        document.getElementById('note').value = data.note || '';
+        document.getElementById('departureTime').value = data.departure_time || ''; document.getElementById('note').value = data.note || '';
         document.getElementById('specialInfo').value = data.special_info || '';
 
-        if(window.currentTab === 'report' || window.currentTab === 'profit-loss') window.switchTab('dashboard');
-
+        if(['report', 'profit-loss'].includes(window.currentTab)) window.switchTab('dashboard');
         document.getElementById('formTitle').innerText = "✏️ 修改訂單模式";
         document.getElementById('formTitle').classList.replace("text-slate-800", "text-orange-600");
         document.getElementById('formSection').classList.add("bg-orange-50", "border-orange-300");
@@ -787,44 +733,37 @@ const firebaseConfig = {
         const data = docItem.data;
         const isPaid = (data.payment_status === 'paid') || (!data.payment_status && data.status === 'completed');
         const isClosed = (data.case_status === 'closed') || (!data.case_status && data.status === 'completed');
-        
-        const paymentBadge = isPaid 
-            ? `<span class="bg-emerald-100 text-emerald-800 text-xs px-2 py-0.5 rounded mr-1 shadow-sm">✅ 已收款</span>` 
-            : `<span class="bg-red-100 text-red-800 text-xs px-2 py-0.5 rounded mr-1 shadow-sm">❌ 未收款</span>`;
-            
-        const caseBadge = isClosed 
-            ? `<span class="bg-blue-100 text-blue-800 text-xs px-2 py-0.5 rounded mr-2 shadow-sm">📁 已結案</span>` 
-            : `<span class="bg-yellow-100 text-yellow-800 text-xs px-2 py-0.5 rounded mr-2 shadow-sm">⏳ 未結案</span>`;
-            
+        const paymentBadge = isPaid ? `<span class="bg-emerald-100 text-emerald-800 text-xs px-2 py-0.5 rounded mr-1 shadow-sm">✅ 收款</span>` : `<span class="bg-red-100 text-red-800 text-xs px-2 py-0.5 rounded mr-1 shadow-sm">❌ 未收</span>`;
+        const caseBadge = isClosed ? `<span class="bg-blue-100 text-blue-800 text-xs px-2 py-0.5 rounded mr-1 shadow-sm">📁 結案</span>` : `<span class="bg-yellow-100 text-yellow-800 text-xs px-2 py-0.5 rounded mr-1 shadow-sm">⏳ 未結</span>`;
+        const categoryBadge = data.category ? `<span class="bg-purple-100 text-purple-800 border border-purple-200 text-xs px-2 py-0.5 rounded mr-2 shadow-sm font-bold">🏷️ ${data.category}</span>` : '';
         const paxDisplay = data.pax ? `<span class="bg-slate-200 text-slate-700 font-bold text-xs px-2 py-0.5 rounded">👤 ${data.pax}</span>` : '';
         const timeDisplay = data.departure_time ? `<p class="text-sm font-bold text-orange-600 mt-1">⏰ 出發：${data.departure_time}</p>` : '';
         
-        const currType = data.currency || 'AUD';
-        const sym = { AUD: 'A$', CNY: '¥', TWD: 'NT$' }[currType] || 'A$';
-        const displayAmount = data.amount || data.aud || 0;
-        const displayCost = data.cost || 0;
-        
+        const currType = data.currency || 'AUD'; const sym = { AUD: 'A$', CNY: '¥', TWD: 'NT$' }[currType] || 'A$';
+        const displayAmount = data.amount || data.aud || 0; const displayCost = data.cost || 0;
         const unitDisplay = data.unit_price ? `<span class="text-[10px] font-bold text-blue-500 block leading-tight mb-0.5">${sym} ${data.unit_price} × ${data.pax}</span>` : '';
+
+        // 核心變更：卡片上直覺顯示細分成本
+        const cDriver = data.cost_driver || 0; const cFuel = data.cost_fuel || 0; const cTicket = data.cost_ticket || 0;
 
         return `
             <div class="order-card p-4 bg-white rounded-lg border border-slate-200 hover:border-blue-400 transition shadow-sm relative group">
-                <div class="action-btns absolute top-2 right-2 bg-white/95 p-1.5 rounded-lg shadow-md flex space-x-2 z-10 border border-slate-200">
-                    <button onclick="togglePayment('${docItem.id}', '${isPaid ? 'paid' : 'unpaid'}')" title="切換收款狀態" class="text-slate-600 hover:text-emerald-600 text-xs font-bold transition">💲收款</button>
-                    <button onclick="toggleCase('${docItem.id}', '${isClosed ? 'closed' : 'open'}')" title="切換結案狀態" class="text-slate-600 hover:text-blue-600 text-xs font-bold transition">📁結案</button>
-                    <button onclick="editOrder('${docItem.id}')" title="修改" class="text-slate-400 hover:text-orange-500 transition">✏️</button>
-                    <button onclick="deleteOrder('${docItem.id}')" title="刪除" class="text-slate-400 hover:text-red-500 transition">🗑️</button>
+                <div class="action-btns absolute top-2 right-2 bg-white/90 p-1.5 rounded-lg shadow-md flex space-x-2 z-10 border border-slate-200">
+                    <button onclick="togglePayment('${docItem.id}', '${isPaid ? 'paid' : 'unpaid'}')" class="text-slate-600 hover:text-emerald-600 text-xs font-bold transition">💲收款</button>
+                    <button onclick="toggleCase('${docItem.id}', '${isClosed ? 'closed' : 'open'}')" class="text-slate-600 hover:text-blue-600 text-xs font-bold transition">📁結案</button>
+                    <button onclick="editOrder('${docItem.id}')" class="text-slate-400 hover:text-orange-500 transition">✏️</button>
+                    <button onclick="deleteOrder('${docItem.id}')" class="text-slate-400 hover:text-red-500 transition">🗑️</button>
                 </div>
-                
-                <div class="flex items-center mb-2 pr-32 flex-wrap gap-y-1">${paymentBadge} ${caseBadge} ${paxDisplay}</div>
+                <div class="flex items-center mb-2 pr-32 flex-wrap gap-y-1">${paymentBadge} ${caseBadge} ${categoryBadge} ${paxDisplay}</div>
                 <p class="font-bold text-base text-slate-800 leading-tight">${data.customer}</p>
                 ${timeDisplay}
                 <div class="bg-slate-50 border border-slate-100 rounded p-2 mt-2 max-h-20 overflow-y-auto text-xs text-slate-600 whitespace-pre-wrap">${data.note}</div>
                 <p class="text-xs text-red-500 mt-1 font-bold">${data.special_info || ''}</p>
-                
                 <div class="flex justify-between items-end mt-3 border-t border-slate-100 pt-2">
                     <div class="text-left">
                         <span class="text-[10px] text-slate-400 block mb-0.5">匯率 ${data.fx_rate} </span>
-                        <span class="text-xs text-red-500 font-bold bg-red-50 px-1.5 py-0.5 rounded border border-red-100">成本: ${sym} ${displayCost}</span>
+                        <span class="text-xs text-red-500 font-bold bg-red-50 px-1.5 py-0.5 rounded border border-red-100 block">成本: ${sym} ${displayCost}</span>
+                        <span class="text-[10px] text-red-400 block font-medium leading-none mt-1">司:${cDriver} 油:${cFuel} 票:${cTicket}</span>
                     </div>
                     <div class="text-right">
                         ${unitDisplay}
@@ -837,19 +776,13 @@ const firebaseConfig = {
     };
 
     window.renderUI = () => {
-        document.getElementById('dash-mode-a').innerHTML = '';
-        document.getElementById('dash-mode-b').innerHTML = '';
-        document.getElementById('dash-mode-c').innerHTML = '';
-        document.getElementById('single-mode-list').innerHTML = '';
-        document.getElementById('report-table-body').innerHTML = '';
-        document.getElementById('profit-table-body').innerHTML = '';
+        document.getElementById('dash-mode-a').innerHTML = ''; document.getElementById('dash-mode-b').innerHTML = '';
+        document.getElementById('dash-mode-c').innerHTML = ''; document.getElementById('dash-mode-d').innerHTML = '';
+        document.getElementById('single-mode-list').innerHTML = ''; document.getElementById('report-table-body').innerHTML = ''; document.getElementById('profit-table-body').innerHTML = '';
 
         window.allOrders.sort((a, b) => getTimestampMs(b.data.timestamp) - getTimestampMs(a.data.timestamp));
 
-        let reportCount = 0, totalUnpaid = 0, totalPaid = 0;
-        let reportRows = [], plRows = [];
-        let plTotalRev = 0, plTotalCost = 0;
-
+        let reportCount = 0, totalUnpaid = 0, totalPaid = 0, reportRows = [], plRows = [], plTotalRev = 0, plTotalCost = 0;
         const activePrefix = window.currentTab === 'report' ? 'report' : (window.currentTab === 'profit-loss' ? 'pl' : null);
         let filterStatus = 'all', filterTimeType = 'all', targetMonth = '', targetDate = '', filterMode = 'all';
         
@@ -862,38 +795,33 @@ const firebaseConfig = {
         }
 
         window.allOrders.forEach((docItem) => {
-            const data = docItem.data;
-            const cardHTML = generateCardHTML(docItem);
+            const data = docItem.data; const cardHTML = generateCardHTML(docItem);
 
             if (window.currentTab === 'dashboard') {
                 if (data.mode === 'Mode_A') document.getElementById('dash-mode-a').innerHTML += cardHTML;
                 if (data.mode === 'Mode_B') document.getElementById('dash-mode-b').innerHTML += cardHTML;
                 if (data.mode === 'Mode_C') document.getElementById('dash-mode-c').innerHTML += cardHTML;
+                if (data.mode === 'Mode_D') document.getElementById('dash-mode-d').innerHTML += cardHTML;
             }
-            if (['Mode_A', 'Mode_B', 'Mode_C'].includes(window.currentTab) && data.mode === window.currentTab) {
+            if (['Mode_A', 'Mode_B', 'Mode_C', 'Mode_D'].includes(window.currentTab) && data.mode === window.currentTab) {
                 document.getElementById('single-mode-list').innerHTML += cardHTML;
             }
 
             if (activePrefix) {
                 const isPaid = (data.payment_status === 'paid') || (!data.payment_status && data.status === 'completed');
                 const isClosed = (data.case_status === 'closed') || (!data.case_status && data.status === 'completed');
-                
-                const passStatus = (filterStatus === 'all') || 
-                                   (filterStatus === 'open' && !isClosed) || 
-                                   (filterStatus === 'closed' && isClosed);
+                const passStatus = (filterStatus === 'all') || (filterStatus === 'open' && !isClosed) || (filterStatus === 'closed' && isClosed);
                 const passMode = (filterMode === 'all') || (data.mode === filterMode);
                 
                 let passTime = true;
                 if (filterTimeType !== 'all') {
                     const dep = data.departure_time || "";
                     if (filterTimeType === 'month' && targetMonth) {
-                        const mm = targetMonth.split('-')[1]; 
-                        const m = parseInt(mm, 10).toString(); 
+                        const mm = targetMonth.split('-')[1]; const m = parseInt(mm, 10).toString(); 
                         passTime = dep.includes(targetMonth) || dep.includes(`-${mm}-`) || dep.includes(`${m}月`);
                     } 
                     else if (filterTimeType === 'day' && targetDate) {
-                        const parts = targetDate.split('-');
-                        const mm = parts[1]; const dd = parts[2];
+                        const parts = targetDate.split('-'); const mm = parts[1]; const dd = parts[2];
                         const m = parseInt(mm, 10).toString(); const d = parseInt(dd, 10).toString();
                         passTime = dep.includes(targetDate) || dep.includes(`${mm}-${dd}`) || dep.includes(`${mm}/${dd}`) || dep.includes(`${m}月${d}號`) || dep.includes(`${m}月${d}日`);
                     }
@@ -901,50 +829,43 @@ const firebaseConfig = {
 
                 if (passStatus && passTime && passMode) {
                     if (window.currentTab === 'report') {
-                        reportCount++;
-                        if (isPaid) totalPaid += (data.twd || 0);
-                        else totalUnpaid += (data.twd || 0);
+                        reportCount++; if (isPaid) totalPaid += (data.twd || 0); else totalUnpaid += (data.twd || 0);
                         reportRows.push(docItem);
                     } else if (window.currentTab === 'profit-loss') {
                         const fx = parseFloat(data.fx_rate) || 1;
-                        const costTwd = (parseFloat(data.cost) || 0) * fx;
-                        plTotalRev += (data.twd || 0);
-                        plTotalCost += costTwd;
+                        plTotalRev += (data.twd || 0); plTotalCost += ((parseFloat(data.cost) || 0) * fx);
                         plRows.push(docItem);
                     }
                 }
             }
         });
 
+        // 渲染出發報表
         if (window.currentTab === 'report') {
             reportRows.sort((a, b) => (a.data.departure_time || "9999").localeCompare(b.data.departure_time || "9999"));
             reportRows.forEach(docItem => {
                 const data = docItem.data;
                 const isPaid = (data.payment_status === 'paid') || (!data.payment_status && data.status === 'completed');
                 const isClosed = (data.case_status === 'closed') || (!data.case_status && data.status === 'completed');
-                const paymentStr = isPaid ? '<span class="text-emerald-600 font-bold block mb-1 text-[11px]">✅ 已收款</span>' : '<span class="text-red-500 font-bold block mb-1 text-[11px]">❌ 未收款</span>';
-                const caseStr = isClosed ? '<span class="text-blue-600 font-bold block text-[11px]">📁 已結案</span>' : '<span class="text-yellow-600 font-bold block text-[11px]">⏳ 未結案</span>';
-                const modeMap = { Mode_A: "自營", Mode_B: "轉出", Mode_C: "轉入" };
-                const currType = data.currency || 'AUD';
-                const sym = { AUD: 'A$', CNY: '¥', TWD: 'NT$' }[currType] || 'A$';
+                const modeMap = { Mode_A: "自營", Mode_B: "轉出", Mode_C: "轉入", Mode_D: "門票飯店" };
+                const currType = data.currency || 'AUD'; const sym = { AUD: 'A$', CNY: '¥', TWD: 'NT$' }[currType] || 'A$';
                 
-                const cleanNote = (data.note || '').replace(/"/g, '&quot;');
-                const hoverText = `📝 行程備註：\n${cleanNote}`;
+                // 讀取子成本細目
+                const cDriver = data.cost_driver || 0; const cFuel = data.cost_fuel || 0; const cTicket = data.cost_ticket || 0;
 
                 document.getElementById('report-table-body').innerHTML += `
-                    <tr class="hover:bg-slate-50 border-b border-slate-200 transition cursor-help" title="${hoverText}">
-                        <td class="p-3 leading-tight">${paymentStr}${caseStr}</td>
-                        <td class="p-3 text-xs text-slate-500">${modeMap[data.mode]}</td>
+                    <tr class="hover:bg-slate-50 border-b border-slate-200 transition">
+                        <td class="p-3 leading-tight">${isPaid?'<span class="text-emerald-600 font-bold block mb-1 text-[11px]">✅ 已收款</span>':'<span class="text-red-500 font-bold block mb-1 text-[11px]">❌ 未收款</span>'}${isClosed?'<span class="text-blue-600 font-bold block text-[11px]">📁 已結案</span>':'<span class="text-yellow-600 font-bold block text-[11px]">⏳ 未結案</span>'}</td>
+                        <td class="p-3 text-xs text-slate-500 font-bold">${modeMap[data.mode]}<br><span class="text-purple-600">${data.category || '—'}</span></td>
                         <td class="p-3 font-bold text-sm">${data.customer} <span class="text-[10px] text-slate-400">(${data.pax}人)</span></td>
                         <td class="p-3 text-orange-600 font-bold text-xs">${data.departure_time || '-'}</td>
                         <td class="p-3 text-right">
                             <span class="font-bold text-slate-800 text-sm block">${sym} ${(data.amount || data.aud || 0)}</span>
                             <span class="text-xs text-red-500 font-bold block">成本: ${sym} ${data.cost || 0}</span>
+                            <span class="text-[10px] text-red-400 block font-medium leading-none mt-0.5">(司:${cDriver} 油:${cFuel} 票:${cTicket})</span>
                             <p class="text-[10px] text-slate-500 font-normal mt-1 border-t border-slate-200 pt-1">NT$ ${data.twd.toLocaleString()}</p>
                         </td>
-                        <td class="p-3 text-center no-print">
-                            <button onclick="editOrder('${docItem.id}')" class="text-blue-600 hover:bg-blue-50 px-2 py-1 rounded text-xs">修改</button>
-                        </td>
+                        <td class="p-3 text-center no-print"><button onclick="editOrder('${docItem.id}')" class="text-blue-600 hover:bg-blue-50 px-2 py-1 rounded text-xs font-bold">修改</button></td>
                     </tr>
                 `;
             });
@@ -953,50 +874,41 @@ const firebaseConfig = {
             document.getElementById('rep-paid-sum').innerText = "NT$ " + totalPaid.toLocaleString();
         }
 
+        // 渲染損益報表
         if (window.currentTab === 'profit-loss') {
             plRows.sort((a, b) => (a.data.departure_time || "9999").localeCompare(b.data.departure_time || "9999"));
             plRows.forEach(docItem => {
                 const data = docItem.data;
                 const isClosed = (data.case_status === 'closed') || (!data.case_status && data.status === 'completed');
-                const caseStr = isClosed ? '<span class="text-blue-600 font-bold block text-[11px]">📁 已結案</span>' : '<span class="text-yellow-600 font-bold block text-[11px]">⏳ 未結案</span>';
-                const modeMap = { Mode_A: "自營", Mode_B: "轉出", Mode_C: "轉入" };
-                const currType = data.currency || 'AUD';
-                const sym = { AUD: 'A$', CNY: '¥', TWD: 'NT$' }[currType] || 'A$';
+                const modeMap = { Mode_A: "自營", Mode_B: "轉出", Mode_C: "轉入", Mode_D: "門票飯店" };
+                const currType = data.currency || 'AUD'; const sym = { AUD: 'A$', CNY: '¥', TWD: 'NT$' }[currType] || 'A$';
                 
                 const fx = parseFloat(data.fx_rate) || 1;
                 const revLocal = parseFloat(data.amount || data.aud || 0);
                 const costLocal = parseFloat(data.cost || 0);
                 const profitLocal = revLocal - costLocal;
-                
-                const revTwd = data.twd || 0;
-                const costTwd = costLocal * fx;
-                const profitTwd = revTwd - costTwd;
-                
+                const revTwd = data.twd || 0; const costTwd = costLocal * fx; const profitTwd = revTwd - costTwd;
                 const margin = revLocal > 0 ? ((profitLocal / revLocal) * 100).toFixed(1) : 0;
-                const profitColorClass = profitTwd >= 0 ? 'text-emerald-600' : 'text-red-600';
+
+                // 損益表子項目拆解
+                const cDriver = data.cost_driver || 0; const cFuel = data.cost_fuel || 0; const cTicket = data.cost_ticket || 0;
 
                 document.getElementById('profit-table-body').innerHTML += `
                     <tr class="hover:bg-slate-50 border-b border-slate-200 transition">
-                        <td class="p-3 leading-tight">${caseStr}<span class="text-xs text-slate-500">${modeMap[data.mode]}</span></td>
+                        <td class="p-3 leading-tight">${isClosed?'<span class="text-blue-600 font-bold block text-[11px]">📁 已結案</span>':'<span class="text-yellow-600 font-bold block text-[11px]">⏳ 未結案</span>'}<span class="text-xs text-slate-500 font-bold">${modeMap[data.mode]}-${data.category||'—'}</span></td>
                         <td class="p-3 font-bold text-sm">${data.customer}</td>
                         <td class="p-3 text-orange-600 font-bold text-xs">${data.departure_time || '-'}</td>
-                        <td class="p-3 text-right">
-                            <span class="font-bold text-slate-800">${sym} ${revLocal}</span><br>
-                            <span class="text-[10px] text-slate-400">NT$ ${Math.round(revTwd).toLocaleString()}</span>
-                        </td>
+                        <td class="p-3 text-right"><span class="font-bold">${sym} ${revLocal}</span><br><span class="text-[10px] text-slate-400">NT$ ${Math.round(revTwd).toLocaleString()}</span></td>
                         <td class="p-3 text-right text-red-600">
                             <span class="font-bold">${sym} ${costLocal}</span><br>
+                            <span class="text-[10px] text-red-400 block font-medium leading-none">(司:${cDriver} 油:${cFuel} 票:${cTicket})</span>
                             <span class="text-[10px] text-red-400">NT$ ${Math.round(costTwd).toLocaleString()}</span>
                         </td>
-                        <td class="p-3 text-right ${profitColorClass}">
-                            <span class="font-bold">${sym} ${profitLocal.toFixed(2)}</span><br>
-                            <span class="text-[10px]">NT$ ${Math.round(profitTwd).toLocaleString()}</span>
-                        </td>
+                        <td class="p-3 text-right ${profitTwd >= 0 ? 'text-emerald-600' : 'text-red-600'}"><span class="font-bold">${sym} ${profitLocal.toFixed(2)}</span><br><span class="text-[10px]">NT$ ${Math.round(profitTwd).toLocaleString()}</span></td>
                         <td class="p-3 text-center font-bold">${margin}%</td>
                     </tr>
                 `;
             });
-            
             document.getElementById('pl-rev-sum').innerText = "NT$ " + Math.round(plTotalRev).toLocaleString();
             document.getElementById('pl-cost-sum').innerText = "NT$ " + Math.round(plTotalCost).toLocaleString();
             const plProfit = plTotalRev - plTotalCost;
